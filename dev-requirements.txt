@@ -1,0 +1,3 @@
+pytest-cov
+pylint
+pytest-pep8
