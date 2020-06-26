@@ -1,3 +1,7 @@
+coverage[toml]
+flake8
+pre-commit
+pytest
 pytest-cov
-pylint
-pytest-pep8
+pytest-flask
+sphinx

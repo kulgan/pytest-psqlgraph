@@ -1,0 +1,21 @@
+[build-system]
+requires = [
+    "setuptools>=42",
+    "wheel",
+    "setuptools_scm[toml]>=3.4"
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+local_scheme = "dirty-tag"
+version_scheme = "release-branch-semver"
+
+[tool.coverage.run]
+branch = true
+context = "unit tests"
+source = ["pytest_psqlgraph"]
+
+[tool.coverage.html]
+title = "Pytest psqlgraph coverage report"
+directory = "docs/htmlcov"
+show_contexts = true
