@@ -30,3 +30,12 @@ def drop_tables(bases, pg_driver):
     """
     for base in bases:
         base.metadata.drop_all(pg_driver.engine)
+
+
+def load_data(source):
+    """ Load data from json/yaml file
+
+        Args:
+            source (str): source filename
+
+    """

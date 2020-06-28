@@ -1,6 +1,12 @@
+from os import path
 import uuid
 
+import pytest
+
 import models
+
+
+here = path.abspath(path.dirname(__file__))
 
 
 def test_initialization(driver_a):
@@ -29,5 +35,11 @@ def test_initialization(driver_a):
         assert mom.name == mother.name
 
 
-def test_again(driver_fixture):
-    print(driver_fixture)
+@pytest.mark.pgdata(
+    model=models,
+    dictionary=models.Dictionary(),
+    source="{}/data/sample.yaml".format(here),
+    unique_key="node_id",
+)
+def test_again(driver_a):
+    print(driver_a)

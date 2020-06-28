@@ -66,6 +66,7 @@ setup(
             "pytest",
             "pytest-cov",
             "sphinx",
+            "sphinxcontrib-napoleon",
             "tox",
         ]
     },

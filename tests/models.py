@@ -2,6 +2,7 @@ from os import path
 
 import psqlgraph
 import yaml
+from psqlgraph import Edge, Node
 
 here = path.abspath(path.dirname(__file__))
 
@@ -23,27 +24,27 @@ class PersonMixin(object):
         self._set_property("name", val)
 
 
-class Father(psqlgraph.Node, PersonMixin):
+class Father(Node, PersonMixin):
 
     __label__ = "father"
 
 
-class Son(psqlgraph.Node, PersonMixin):
+class Son(Node, PersonMixin):
 
     __label__ = "son"
 
 
-class Mother(psqlgraph.Node, PersonMixin):
+class Mother(Node, PersonMixin):
 
     __label__ = "mother"
 
 
-class Daughter(psqlgraph.Node, PersonMixin):
+class Daughter(Node, PersonMixin):
 
     __label__ = "daughter"
 
 
-class HusbandWifeEdge(psqlgraph.Edge):
+class HusbandWifeEdge(Edge):
 
     __src_class__ = "Father"
     __dst_class__ = "Mother"
@@ -51,7 +52,7 @@ class HusbandWifeEdge(psqlgraph.Edge):
     __dst_src_assoc__ = "husband"
 
 
-class FatherSonEdge(psqlgraph.Edge):
+class FatherSonEdge(Edge):
 
     __src_class__ = "Father"
     __dst_class__ = "Son"
@@ -59,14 +60,14 @@ class FatherSonEdge(psqlgraph.Edge):
     __dst_src_assoc__ = "father"
 
 
-class FatherDaughterEdge(psqlgraph.Edge):
+class FatherDaughterEdge(Edge):
     __src_class__ = "Father"
     __dst_class__ = "Daughter"
     __src_dst_assoc__ = "daughters"
     __dst_src_assoc__ = "father"
 
 
-class MotherSonEdge(psqlgraph.Edge):
+class MotherSonEdge(Edge):
 
     __src_class__ = "Mother"
     __dst_class__ = "Son"
@@ -74,7 +75,7 @@ class MotherSonEdge(psqlgraph.Edge):
     __dst_src_assoc__ = "mother"
 
 
-class MotherDaughterEdge(psqlgraph.Edge):
+class MotherDaughterEdge(Edge):
     __src_class__ = "Mother"
     __dst_class__ = "Daughter"
     __src_dst_assoc__ = "daughters"
