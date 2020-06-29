@@ -7,7 +7,6 @@ repos:
       - id: fix-encoding-pragma
         args: [--remove]
       - id: check-yaml
-      - id: flake8
   - repo: https://gitlab.com/pycqa/flake8
     rev: ''
     hooks:
