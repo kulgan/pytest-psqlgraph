@@ -1,10 +1,9 @@
-from os import path
 import uuid
+from os import path
 
 import pytest
 
 import models
-
 
 here = path.abspath(path.dirname(__file__))
 
@@ -36,10 +35,13 @@ def test_initialization(driver_a):
 
 
 @pytest.mark.pgdata(
-    model=models,
-    dictionary=models.Dictionary(),
-    source="{}/data/sample.yaml".format(here),
-    unique_key="node_id",
+    name="pg_data",
+    params=dict(
+        model=models,
+        dictionary=models.Dictionary(),
+        source="{}/data/sample.yaml".format(here),
+        unique_key="node_id",
+    )
 )
-def test_again(driver_a):
-    print(driver_a)
+def test_again(driver_a, pg_data):
+    print(pg_data)
