@@ -24,7 +24,7 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
       - name: setup python
-        uses: action/setup-python@v2
+        uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
       - name: before test
