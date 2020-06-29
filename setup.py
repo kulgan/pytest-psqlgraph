@@ -1,4 +1,5 @@
 from os import path
+
 from setuptools import find_packages
 from setuptools import setup
 
@@ -11,7 +12,6 @@ with open(path.join(here, "README.md")) as f:
 
 setup(
     name="pytest-psqlgraph",
-    platform="any",
     license="Apache 2.0",
     author="Rowland Ogwara",
     author_email="r.ogwara@gmail.com",
@@ -19,7 +19,7 @@ setup(
     maintainer_email="r.ogwara@gmail.com",
     use_scm_version={
         "local_scheme": "dirty-tag",
-        "version_scheme": "release-branch-scheme"
+        "version_scheme": "release-branch-semver"
     },
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -53,15 +53,29 @@ setup(
     packages=find_packages(where="src"),
     zip_safe=True,
     install_requires=[
-        "pytest>=4.5"
-        "psqlgraph @ git+ssh://git@github.com/NCI-GDC/psqlgraph.git@1.3.0#egg=psqlgraph"
+        "attrs",
+        "pytest>=4.5",
+        "PyYaml>=5",
+        "psqlgraph @ git+ssh://git@github.com/NCI-GDC/psqlgraph.git@3.0.0a2#egg=psqlgraph"
     ],
+    extras_require={
+        "dev": [
+            "coverage[toml]",
+            "flake8",
+            "pre-commit",
+            "pytest",
+            "pytest-cov",
+            "sphinx",
+            "sphinxcontrib-napoleon",
+            "tox",
+        ]
+    },
     setup_requires=[
         "setuptools_scm"
     ],
     entry_points={
         "pytest11": [
-            "psqlgraph"
+            "psqlgraph = pytest_psqlgraph.plugin:plugin"
         ]
     }
 )

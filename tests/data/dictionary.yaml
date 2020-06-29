@@ -1,0 +1,30 @@
+father:
+  properties:
+    name:
+      type: string
+  links:
+    - name: sons
+    - name: wife
+    - name: daugthers
+son:
+  properties:
+    name:
+      type: string
+  links:
+    - name: father
+    - name: mother
+mother:
+  properties:
+    name:
+      type: string
+  links:
+    - name: husband
+    - name: sons
+    - name: daugthers
+daughter:
+  properties:
+    name:
+      type: string
+  links:
+    - name: father
+    - name: mother
