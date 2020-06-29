@@ -8,15 +8,15 @@ import models
 here = path.abspath(path.dirname(__file__))
 
 
-def test_initialization(driver_a):
+def test_initialization(pg_driver):
     """ Tests fixture gets initialized correctly
 
+    Tables are created and persistence happens
     Args:
-        driver_a (psqlgraph.PsqlGraphDriver): pg driver
-
+        pg_driver (psqlgraph.PsqlGraphDriver): pg driver
     """
-    with driver_a.session_scope() as s:
-        x = driver_a.nodes(models.Mother).count()
+    with pg_driver.session_scope() as s:
+        x = pg_driver.nodes(models.Mother).count()
         assert 0 == x
 
         # create mother entry
@@ -26,8 +26,8 @@ def test_initialization(driver_a):
         )
         s.add(mother)
 
-    with driver_a.session_scope() as s:
-        x = driver_a.nodes(models.Mother).all()
+    with pg_driver.session_scope() as s:
+        x = pg_driver.nodes(models.Mother).all()
         assert 1 == len(x)
         mom = x[0]
         assert mom.node_id == mother.node_id
@@ -43,5 +43,5 @@ def test_initialization(driver_a):
         unique_key="node_id",
     )
 )
-def test_again(driver_a, pg_data):
+def test_again(pg_driver, pg_data):
     print(pg_data)

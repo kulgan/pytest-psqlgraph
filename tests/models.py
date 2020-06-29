@@ -1,8 +1,7 @@
 from os import path
 
-import psqlgraph
 import yaml
-from psqlgraph import Edge, Node
+from psqlgraph import Edge, Node, pg_property
 
 here = path.abspath(path.dirname(__file__))
 
@@ -19,7 +18,7 @@ class PersonMixin(object):
 
     _pg_edges = {}
 
-    @psqlgraph.pg_property
+    @pg_property
     def name(self, val):
         self._set_property("name", val)
 
