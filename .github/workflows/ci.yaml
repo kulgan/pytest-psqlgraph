@@ -17,7 +17,7 @@ jobs:
         env:
           POSTGRES_PPASSWORD: test
         ports:
-          - 5432:5432
+          - 5432/tcp
 #         options: >-
 #           --health-cmd pg_isready
 #           --health-interval 10s
@@ -42,7 +42,7 @@ jobs:
           PG_USER: postgres
           PG_NAME: postgres
           PG_PASS: test
-          PG_HOST: localhost
+          PG_HOST: localhost:${{ job.services.postgres.ports[5432] }}
   publish:
     needs: build
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
