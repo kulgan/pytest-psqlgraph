@@ -56,7 +56,7 @@ setup(
         "attrs",
         "pytest>=4.5",
         "PyYaml>=5",
-        "psqlgraph @ git+ssh://git@github.com/NCI-GDC/psqlgraph.git@3.0.0a2#egg=psqlgraph"
+        "psqlgraph @ git+https://github.com/NCI-GDC/psqlgraph.git@3.0.0a2#egg=psqlgraph"
     ],
     extras_require={
         "dev": [
