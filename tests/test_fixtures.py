@@ -8,13 +8,15 @@ import models
 here = path.abspath(path.dirname(__file__))
 
 
-def test_initialization(pg_driver):
+def test_init_drivers(pg_driver, pgx_driver):
     """ Tests fixture gets initialized correctly
 
     Tables are created and persistence happens
     Args:
         pg_driver (psqlgraph.PsqlGraphDriver): pg driver
     """
+    assert pg_driver and pgx_driver
+
     with pg_driver.session_scope() as s:
         x = pg_driver.nodes(models.Mother).count()
         assert 0 == x
@@ -36,6 +38,7 @@ def test_initialization(pg_driver):
 
 @pytest.mark.pgdata(
     name="pg_data",
+    driver="pg_driver",
     params=dict(
         model=models,
         dictionary=models.Dictionary(),
@@ -43,5 +46,5 @@ def test_initialization(pg_driver):
         unique_key="node_id",
     )
 )
-def test_again(pg_driver, pg_data):
-    print(pg_data)
+def test_mark_pgdata(pg_driver, pg_data):
+    assert len(pg_data) == 3

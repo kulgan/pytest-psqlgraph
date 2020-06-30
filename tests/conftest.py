@@ -14,5 +14,11 @@ def pg_config():
             "user": os.getenv("PG_USER", "test"),
             "password": os.getenv("PG_PASS", "test"),
             "database": os.getenv("PG_NAME", "postgres"),
+        },
+        "pgx_driver": {
+            "host": os.getenv("PG_HOST", "localhost"),
+            "user": os.getenv("PG_USER", "test"),
+            "password": os.getenv("PG_PASS", "test"),
+            "database": os.getenv("PG_NAME", "postgres"),
         }
     }

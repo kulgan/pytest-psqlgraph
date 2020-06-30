@@ -26,14 +26,6 @@ class PsqlGraphConfig(object):
     def __attrs_post_init__(self):
         self.pg_driver = psqlgraph.PsqlGraphDriver(**self.config)
 
-    def pre(self):
-        helpers.truncate_tables(self.pg_driver)
-        return self.pg_driver
-
-    def post(self):
-        logger.debug("clean up in progress")
-        helpers.truncate_tables(self.pg_driver)
-
 
 class PsqlgraphPlugin(object):
     """ pytest Plugin class
@@ -64,7 +56,7 @@ class PsqlgraphPlugin(object):
     @staticmethod
     def pytest_configure(config):
         config.addinivalue_line(
-            "markers", "pgdata(arg_name, params): loads data for testing "
+            "markers", "pgdata(name, driver, params): loads data for testing "
         )
 
     @hookimpl(tryfirst=True)
