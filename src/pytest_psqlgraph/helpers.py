@@ -77,6 +77,7 @@ class PgDataHandler(FixtureHandler):
     kwargs = attr.ib(default={})
     volatile = attr.ib(init=False, default=True)
     mocks_factory = attr.ib(init=False)
+    nodes = attr.ib(type=list, init=False)
 
     def pre(self, pg_driver):
         self._pg_driver = pg_driver
@@ -85,7 +86,7 @@ class PgDataHandler(FixtureHandler):
             models=self.kwargs.get("model"),
             defaults=self.kwargs.get("defaults"),
             dictionary=self.kwargs.get("dictionary"),
-            post_processors=self.kwargs.get("post_processors")
+            post_processors=self.kwargs.get("post_processors", {})  # type: dict[str, list]
         )
 
         source_data = self.kwargs.get("source")  # type: str|dict
@@ -107,7 +108,7 @@ class DataFactory(object):
     models = attr.ib()
     pg_driver = attr.ib()
     dictionary = attr.ib()
-    post_processors = attr.ib()
+    post_processors = attr.ib(type=dict, default={})
     defaults = attr.ib(default={})
 
     factory = attr.ib(init=False)
@@ -128,6 +129,12 @@ class DataFactory(object):
             edges=source_data["edges"],
         )
         # do post processing
+        with self.pg_driver.session_scope() as s:
+            for node in self.mock_data:
+                processors = self.post_processors.get(node.label, [])
+                for func in processors:
+                    func(node)
+                s.add(node)
 
     def clean(self):
         with self.pg_driver.session_scope() as sxn:
@@ -138,11 +145,11 @@ class DataFactory(object):
 
 
 def load_source(source):
-    ext = source.split(".")[-1]
-    if ext in ["yaml", "yml"]:
+    file_ext = source.split(".")[-1]
+    if file_ext in ["yaml", "yml"]:
         with open(source, "r") as f:
             return yaml.safe_load(f.read())
-    if ext == "json":
+    if file_ext == "json":
         with open(source, "r") as f:
             return json.load(f)
     raise ValueError("Unsupported extension {}, file must end with one of {}".format(

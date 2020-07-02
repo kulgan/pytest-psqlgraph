@@ -1,0 +1,21 @@
+dist: xenial
+
+python:
+  - 2.7
+  - 3.5
+  - 3.6
+  - 3.7
+  - 3.8
+
+addons:
+  postgresql: 10
+
+install:
+  - pip install tox-travis
+
+before_script:
+  - psql -U postgres -c "create user test with superuser password 'test';"
+  - pip install tox-travis tox-pyenv
+
+script:
+  - tox
