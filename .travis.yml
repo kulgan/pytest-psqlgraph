@@ -12,11 +12,11 @@ addons:
   postgresql: 10
 
 install:
+  - python -m pip install --upgrade pip
   - pip install tox-travis
 
 before_script:
   - psql -U postgres -c "create user test with superuser password 'test';"
-  - pip install tox-travis tox-pyenv
 
 script:
   - tox
