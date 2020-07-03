@@ -15,6 +15,7 @@ Install dependency ::
 Setup ``pg_config`` fixture in main ``conftest.py``:
 
 .. code-block:: python
+
     import pytest
 
     @pytest.fixture
@@ -31,6 +32,7 @@ Setup ``pg_config`` fixture in main ``conftest.py``:
 This exposes a request scoped fixture that can be auto used:
 
 .. code-block:: python
+
     def test_something(pg_driver):
         with pg_driver.session_scoped() as s:
             s.add(Node(..))
