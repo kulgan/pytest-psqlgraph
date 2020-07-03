@@ -3,10 +3,9 @@ import logging
 import attr
 import psqlgraph
 import pytest
-from _pytest.config import hookimpl
 from _pytest.fixtures import FixtureLookupError
 
-from pytest_psqlgraph import helpers
+from . import helpers
 
 logger = logging.getLogger("pytest_psqlgraph.plugin")
 
@@ -26,21 +25,13 @@ class PsqlGraphConfig(object):
     def __attrs_post_init__(self):
         self.pg_driver = psqlgraph.PsqlGraphDriver(**self.config)
 
-    def pre(self):
-        helpers.truncate_tables(self.pg_driver)
-        return self.pg_driver
-
-    def post(self):
-        logger.debug("clean up in progress")
-        helpers.truncate_tables(self.pg_driver)
-
 
 class PsqlgraphPlugin(object):
     """ pytest Plugin class
 
     Attributes:
         config (dict[str, PsqlGraphConfig]): available configs
-        markers (dict(str, helpers.FixtureHandler): markers
+        fixture_handlers (dict(str, helpers.FixtureHandler): markers
     """
 
     configs = {}
@@ -64,10 +55,9 @@ class PsqlgraphPlugin(object):
     @staticmethod
     def pytest_configure(config):
         config.addinivalue_line(
-            "markers", "pgdata(arg_name, params): loads data for testing "
+            "markers", "pgdata(name, driver, params): loads data for testing "
         )
 
-    @hookimpl(tryfirst=True)
     def pytest_runtest_setup(self, item):
         item._pg_mark = None
 
@@ -83,7 +73,6 @@ class PsqlgraphPlugin(object):
 
             Initializes the database tables and makes fixtures available
             Args:
-                request:
                 pg_config (dict[str, dict]): driver fixture name and configuration options pairs
 
                 Example:
