@@ -7,6 +7,7 @@ An extension for `pytest <https://pytest.org>`_ provide useful tools for testing
 
 Quick Start
 -----------
+
 Install dependency ::
 
     $ pip install pytest-psqlgraph
@@ -27,15 +28,12 @@ Setup ``pg_config`` fixture in main ``conftest.py``:
             }
         }
 
-..
-
 This exposes a request scoped fixture that can be auto used:
 
 .. code-block:: python
     def test_something(pg_driver):
         with pg_driver.session_scoped() as s:
             s.add(Node(..))
-..
 
 See docs for more
 
