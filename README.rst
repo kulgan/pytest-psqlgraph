@@ -18,7 +18,7 @@ Setup `pg_config` fixture:
     @pytest.fixture
     def pg_config():
         return {
-            "driver_name": {
+            "pg_driver": {
                 "host": "localhost",
                 "user": "username",
                 "password": "pword",
@@ -26,6 +26,16 @@ Setup `pg_config` fixture:
             }
         }
 
+..
+This exposes a request scoped fixture that can be auto used
+
+.. code-block:: python
+    def test_something(pg_driver):
+        with pg_driver.session_scoped() as s:
+            s.add(Node(..))
+..
+
+See docs for more
 
 .. |PyPI version| image:: https://img.shields.io/pypi/v/pytest-psqlgraph.svg
    :target: https://pypi.python.org/pypi/pytest-psqlgraph
