@@ -8,9 +8,10 @@ An extension for `pytest <https://pytest.org>`_ provide useful tools for testing
 Quick Start
 -----------
 Install dependency ::
+
     $ pip install pytest-psqlgraph
 
-Setup `pg_config` fixture:
+Setup ``pg_config`` fixture in main ``conftest.py``:
 
 .. code-block:: python
     import pytest
@@ -27,7 +28,8 @@ Setup `pg_config` fixture:
         }
 
 ..
-This exposes a request scoped fixture that can be auto used
+
+This exposes a request scoped fixture that can be auto used:
 
 .. code-block:: python
     def test_something(pg_driver):
