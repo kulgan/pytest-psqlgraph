@@ -59,7 +59,32 @@ def append_mr(node):
         }
     )
 )
-def test_mark_pgdata(pg_driver, pg_data):
+def test_pgdata_with_yaml(pg_driver, pg_data):
+    """ Tests use of pgdata to load initial from yaml/json """
+
+    assert len(pg_data) == 3
+    with pg_driver.session_scope():
+        node = pg_driver.nodes().get("father-1")
+        assert node.name == "Mr. Samson O."
+
+
+@pytest.mark.pgdata(
+    name="pg_data",
+    driver="pg_driver",
+    params=dict(
+        model=models,
+        dictionary=models.Dictionary(),
+        source="{}/data/sample.json".format(here),
+        unique_key="node_id",
+        mock_all_props=True,
+        post_processors={
+            "father": [append_mr]
+        }
+    )
+)
+def test_pgdata_with_json(pg_driver, pg_data):
+    """ Tests use of pgdata to load initial from yaml/json """
+
     assert len(pg_data) == 3
     with pg_driver.session_scope():
         node = pg_driver.nodes().get("father-1")

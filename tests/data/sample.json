@@ -1,0 +1,36 @@
+{
+    "nodes": [
+        {
+            "label": "father",
+            "node_id": "father-1",
+            "name": "Samson O."
+        },
+        {
+            "label": "mother",
+            "node_id": "mother-1",
+            "name": "Dana O."
+        },
+        {
+            "label": "son",
+            "node_id": "son-1",
+            "name": "Victor Doom"
+        }
+    ],
+    "edges": [
+        {
+            "src": "father-1",
+            "dst": "mother-1",
+            "label": "wife"
+        },
+        {
+            "src": "father-1",
+            "dst": "son-1",
+            "label": "sons"
+        },
+        {
+            "src": "mother-1",
+            "dst": "son-1",
+            "label": "sons"
+        }
+    ]
+}
