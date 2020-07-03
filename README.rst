@@ -10,7 +10,8 @@ Quick Start
 Install dependency ::
     $ pip install pytest-psqlgraph
 
-Setup `pg_config` fixture
+Setup `pg_config` fixture:
+
 .. code-block:: python
     import pytest
 
@@ -24,7 +25,6 @@ Setup `pg_config` fixture
                 "database": "db_name"
             }
         }
-..
 
 
 .. |PyPI version| image:: https://img.shields.io/pypi/v/pytest-psqlgraph.svg
