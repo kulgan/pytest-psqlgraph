@@ -6,14 +6,13 @@ jobs:
     strategy:
       matrix:
         python:
-          - 2.7
-          - 3.5
           - 3.6
           - 3.7
           - 3.8
+          - 3.9
     services:
       postgres:
-        image: postgres:12
+        image: postgres:13
         env:
           POSTGRES_PASSWORD: test
         ports:
@@ -29,7 +28,7 @@ jobs:
       - name: before test
         run: |
           python -m pip install --upgrade pip
-          pip install .[dev]
+          pip install tox
           tox -e lint
       - name: run tests
         run: |

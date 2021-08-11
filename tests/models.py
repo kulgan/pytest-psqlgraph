@@ -1,20 +1,20 @@
 from os import path
 
+import pkg_resources
 import yaml
 from psqlgraph import Edge, Node, pg_property
 
-here = path.abspath(path.dirname(__file__))
+data_dir = pkg_resources.resource_filename("tests", "data/dictionary.yaml")
 
-with open(path.join(here, "data/dictionary.yaml")) as f:
+with open(data_dir) as f:
     dictionary = yaml.safe_load(f.read())
 
 
-class Dictionary(object):
-
+class Dictionary:
     schema = dictionary
 
 
-class PersonMixin(object):
+class PersonMixin:
 
     _pg_edges = {}
 
@@ -81,59 +81,49 @@ class MotherDaughterEdge(Edge):
     __dst_src_assoc__ = "mother"
 
 
-Father._pg_edges.update({
-    "sons": {
-        "type": Son,
-        "backref": "father"
-    },
-    "daugthers": {
-        "type": Daughter,
-        "backref": "father"
-    },
-    "wife": {
-        "type": Mother,
-        "backref": "husband"
-    },
-})
-
-
-Mother._pg_edges.update({
-    "sons": {
-        "type": Son,
-        "backref": "mother"
-    },
-    "daughters": {
-        "type": Daughter,
-        "backref": "mother"
-    },
-    "husband": {
-        "type": Father,
-        "backref": "wife"
-    },
-})
-
-Son._pg_edges.update({
-    "father": {
-        "type": Father,
-        "backref": "sons",
-        "required": True,
-    },
-    "mother": {
-        "type": Mother,
-        "backref": "sons",
-        "required": True,
+Father._pg_edges.update(
+    {
+        "sons": {"type": Son, "backref": "father"},
+        "daugthers": {"type": Daughter, "backref": "father"},
+        "wife": {"type": Mother, "backref": "husband"},
     }
-})
+)
 
-Daughter._pg_edges.update({
-    "father": {
-        "type": Father,
-        "backref": "daughters",
-        "required": True,
-    },
-    "mother": {
-        "type": Mother,
-        "backref": "daughters",
-        "required": True,
+
+Mother._pg_edges.update(
+    {
+        "sons": {"type": Son, "backref": "mother"},
+        "daughters": {"type": Daughter, "backref": "mother"},
+        "husband": {"type": Father, "backref": "wife"},
     }
-})
+)
+
+Son._pg_edges.update(
+    {
+        "father": {
+            "type": Father,
+            "backref": "sons",
+            "required": True,
+        },
+        "mother": {
+            "type": Mother,
+            "backref": "sons",
+            "required": True,
+        },
+    }
+)
+
+Daughter._pg_edges.update(
+    {
+        "father": {
+            "type": Father,
+            "backref": "daughters",
+            "required": True,
+        },
+        "mother": {
+            "type": Mother,
+            "backref": "daughters",
+            "required": True,
+        },
+    }
+)

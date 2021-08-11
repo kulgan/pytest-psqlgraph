@@ -1,9 +1,5 @@
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel",
-    "setuptools_scm[toml]>=3.4"
-]
+requires = ["setuptools>=42", "wheel", "setuptools_scm[toml]>=3.4"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
@@ -19,3 +15,22 @@ source = ["pytest_psqlgraph"]
 title = "Pytest psqlgraph coverage report"
 directory = "docs/htmlcov"
 show_contexts = true
+
+[tool.isort]
+profile = "black"
+known_first_party = ["pytest_psqlgraph"]
+
+[tool.mypy]
+pretty = true
+ignore_missing_imports = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+warn_redundant_casts = true
+strict_optional = true
+no_implicit_optional = true
+check_untyped_defs = true
+
+[tool.mypy-jsonschema]
+ignore_missing_imports = true
+[tool.mypy-dulwich]
+ignore_missing_imports = true

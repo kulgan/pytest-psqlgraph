@@ -1,135 +1,103 @@
 import logging
+from typing import Dict, cast
 
-import attr
-import psqlgraph
-import pytest
-from _pytest.fixtures import FixtureLookupError
+from _pytest import fixtures as f
+from _pytest import main as m
+from _pytest import python as p
 
-from . import helpers
+from . import helpers, models
 
-logger = logging.getLogger("pytest_psqlgraph.plugin")
+logger = logging.getLogger(__name__)
+CONFIG_FIXTURE_NAME: str = "psqlgraph_config"
+MARKER_NAME: str = "psqlgraph_data"
+ACTIVE_DB_FIXTURES: Dict[str, helpers.DatabaseFixture] = {}
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser: m.Parser) -> None:
     group = parser.getgroup("psqlgraph")
-    group.addoption("--drop-all", action="store_true", help="drop all tables before starting")
+    group.addoption(
+        "--drop-all", action="store_true", help="drop all tables before starting"
+    )
 
 
-@attr.s
-class PsqlGraphConfig(object):
-    name = attr.ib(type=str)
-    bases = attr.ib(type=list)
-    config = attr.ib(type=dict)
-    pg_driver = attr.ib(init=False, repr=False, hash=False, type=psqlgraph.PsqlGraphDriver)
-
-    def __attrs_post_init__(self):
-        self.pg_driver = psqlgraph.PsqlGraphDriver(**self.config)
+def pytest_configure(config: f.Config) -> None:
+    config.addinivalue_line(
+        "markers",
+        "{}(name, driver, params): loads data for testing ".format(MARKER_NAME),
+    )
 
 
-class PsqlgraphPlugin(object):
-    """ pytest Plugin class
+def pytest_collection_finish(session: m.Session) -> None:
+    """A psqlgraph driver instance
 
-    Attributes:
-        config (dict[str, PsqlGraphConfig]): available configs
-        fixture_handlers (dict(str, helpers.FixtureHandler): markers
+    Initializes the database tables and makes fixtures available
+    Example:
+        code-block::
+            {"g": {
+                "host": "localhost",
+                "user": "test",
+                "password": "test",
+                "database": "test_db",
+                "extra_bases": [],
+                "models": model_module,
+                "dictionary": dictionary instance
+                }
+            }
+
     """
+    if not session.items:
+        return
 
-    configs = {}
-    fixture_handlers = {}
+    item = cast(p.Function, session.items[0])
+    request: f.FixtureRequest = item._request
 
-    @property
-    def default_driver(self):
-        if len(self.configs) == 1:
-            return self.configs.keys()[0]
-        return None
+    cfg: Dict[str, models.DatabaseDriverConfig] = request.getfixturevalue(
+        CONFIG_FIXTURE_NAME
+    )
 
-    def register_marker(self, name, fixture_handler):
-        """ Registers a marker with
+    for name, config in cfg.items():
 
-        Args:
-            name:
-            fixture_handler (helpers.FixtureHandler):
-        """
-        self.fixture_handlers[name] = fixture_handler
+        if name in ACTIVE_DB_FIXTURES:
+            continue
 
-    @staticmethod
-    def pytest_configure(config):
-        config.addinivalue_line(
-            "markers", "pgdata(name, driver, params): loads data for testing "
-        )
+        driver = models.DatabaseDriver(config)
+        logger.info("initializing fixture {0}".format(name))
 
-    def pytest_runtest_setup(self, item):
-        item._pg_mark = None
+        fixture = helpers.DatabaseFixture(name, driver)
+        fixture.pre_config()
+        session.addfinalizer(fixture.post_config)
+        ACTIVE_DB_FIXTURES[name] = fixture
 
-        for marker in item.iter_markers(name="pgdata"):
-            kwargs = marker.kwargs
-            fixture_name = kwargs.get("name", "pgdata")
-            handler = helpers.PgDataHandler(driver_name=kwargs.get("driver"), kwargs=kwargs.get("params"))
-            self.register_marker(fixture_name, handler)
 
-    @pytest.fixture(scope="session", autouse=True)
-    def psqlgraph(self, pg_config):
-        """ A psqlgraph driver instance
+def pytest_runtest_setup(item: p.Function) -> None:
+    inject_psqlgraph_fixture(item)
 
-            Initializes the database tables and makes fixtures available
-            Args:
-                pg_config (dict[str, dict]): driver fixture name and configuration options pairs
+    for marker in item.iter_markers(name=MARKER_NAME):
+        inject_marker_data(marker, item)
 
-                Example:
-                    code-block::
-                        {"g": {
-                            "host": "localhost",
-                            "user": "test",
-                            "password": "test",
-                            "database": "test_db",
-                            "ng_bases": []
-                            }
-                        }
 
-            """
-        for driver_name, config in pg_config.items():
-            cfg = PsqlGraphConfig(name=driver_name, bases=config.pop("ng_bases", []), config=config)
-            helpers.create_tables(
-                pg_driver=cfg.pg_driver,
-                namespace=config.get("namespace")
+def inject_psqlgraph_fixture(item: p.Function) -> None:
+    """Resolves and setups psqldriver fixtures based on psqlgraph_config entries"""
+
+    for pg_fixture in ACTIVE_DB_FIXTURES:
+        if pg_fixture not in item.fixturenames:
+            continue
+        fixture = ACTIVE_DB_FIXTURES[pg_fixture]
+        item.funcargs[pg_fixture] = fixture.pre_test()
+        item.addfinalizer(fixture.post_test)
+
+
+def inject_marker_data(marker: f.Mark, item: p.Function) -> None:
+    mark: models.PsqlgraphDataMark = cast(models.PsqlgraphDataMark, marker.kwargs)
+    driver_name = mark["driver_name"]
+
+    if driver_name not in ACTIVE_DB_FIXTURES:
+        raise ValueError(
+            "provided psqlgraph driver {} is not defined in the fixture psqlgraph_config".format(
+                driver_name
             )
-            self.register_marker(driver_name, helpers.FixtureHandler(driver_name))
-            for base in cfg.bases:
-                base.metadata.create_all(cfg.pg_driver.engine)
-            self.configs[cfg.name] = cfg
-        yield
-        for _, cfg in self.configs.items():
-            helpers.drop_tables(cfg.bases, cfg.pg_driver)
-
-    @pytest.fixture(autouse=True)
-    def __pg_fixture__(self, request):
-        """ auto resolves named psqlgraph fixtures
-
-        Args:
-            request (_pytest.fixtures.SubRequest): pytest request
-        """
-        item = request._pyfuncitem
-        for arg_name in request.fixturenames:
-            try:
-                request.getfixturevalue(arg_name)
-            except FixtureLookupError:
-                if arg_name in self.fixture_handlers:
-                    handler = self.fixture_handlers[arg_name]  # type: helpers.FixtureHandler
-                    pg_driver = self.get_driver(handler.driver_name)
-                    item.funcargs[arg_name] = handler.pre(pg_driver)
-                    item.addfinalizer(handler.post)
-                    if handler.volatile:
-                        self.fixture_handlers.pop(arg_name)
-
-    def get_driver(self, driver=None):
-        driver = driver or self.default_driver
-        for name, cfg in self.configs.items():
-            if name == driver:
-                return cfg.pg_driver
-        return None
-
-    def get_driver_names(self, names):
-        return [name for name in names if name in self.configs]
-
-
-plugin = PsqlgraphPlugin()
+        )
+    fixture = ACTIVE_DB_FIXTURES[driver_name]
+    handler = helpers.MarkHandler(mark, fixture)
+    item.funcargs[mark["name"]] = handler.pre()
+    item.addfinalizer(handler.post)
