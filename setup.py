@@ -1,8 +1,6 @@
 from os import path
 
-from setuptools import find_packages
-from setuptools import setup
-
+from setuptools import find_packages, setup
 
 here = path.abspath(path.dirname(__file__))
 
@@ -17,16 +15,10 @@ setup(
     author_email="r.ogwara@gmail.com",
     maintainer="Rowland Ogwara",
     maintainer_email="r.ogwara@gmail.com",
-    use_scm_version={
-        "local_scheme": "dirty-tag",
-        "version_scheme": "release-branch-semver"
-    },
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/kulgan/pytest-psqlgraph",
-    project_urls={
-        "source": "https://github.com/kulgan/pytest-psqlgraph"
-    },
+    project_urls={"source": "https://github.com/kulgan/pytest-psqlgraph"},
     classifiers=[
         "Development Status :: 2 - Alpha",
         "Environment :: Plugins",
@@ -34,20 +26,18 @@ setup(
         "Intended Audience :: Developers",
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: Implementation :: CPython",
         "Programming Language :: Python :: Implementation :: PyPy",
-        'Operating System :: OS Independent',
+        "Operating System :: OS Independent",
         "Topic :: Software Development :: Quality Assurance",
         "Topic :: Software Development :: Testing",
     ],
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*',
+    python_requires=">=3.6",
     keywords="psqlgraph, pytest, testing, postgresql",
     package_dir={"": "src"},
     packages=find_packages(where="src"),
@@ -56,7 +46,9 @@ setup(
         "attrs",
         "pytest>=4.5",
         "PyYaml>=5",
-        "psqlgraph @ git+https://github.com/NCI-GDC/psqlgraph.git@3.0.0a2#egg=psqlgraph"
+        "psqlgraph @ git+https://github.com/NCI-GDC/psqlgraph.git@3.3.0#egg=psqlgraph",
+        "sqlalchemy<1.4",
+        "typing_extensions; python_version < '3.8'",
     ],
     extras_require={
         "dev": [
@@ -66,16 +58,10 @@ setup(
             "pytest",
             "pytest-cov",
             "sphinx",
+            "mypy==0.910",
             "sphinxcontrib-napoleon",
-            "tox",
         ]
     },
-    setup_requires=[
-        "setuptools_scm"
-    ],
-    entry_points={
-        "pytest11": [
-            "psqlgraph = pytest_psqlgraph.plugin:plugin"
-        ]
-    }
+    setup_requires=["setuptools_scm"],
+    entry_points={"pytest11": ["psqlgraph = pytest_psqlgraph.plugin"]},
 )

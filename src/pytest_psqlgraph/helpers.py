@@ -1,44 +1,50 @@
 """ Helper functions """
 import json
+import logging
 
 import attr
 import psqlgraph
 import yaml
 from psqlgraph import ext, mocks
-from psqlgraph.base import ORMBase
+
+from . import models
+
+logger = logging.getLogger(__name__)
 
 
-def truncate_tables(pg_driver):
-    """ Truncates all entries in the datanase
+def truncate_tables(pg_driver: psqlgraph.PsqlGraphDriver) -> None:
+    """Truncates all entries in the datanase
 
     Args:
         pg_driver (psqlgraph.PsqlGraphDriver): active driver
     """
     with pg_driver.engine.begin() as conn:
         for table in reversed(pg_driver.engine.table_names()):
-            conn.execute('delete from {} cascade'.format(table))
+            conn.execute("delete from {} cascade".format(table))
 
 
-def create_tables(pg_driver, namespace):
-    base = ORMBase if namespace is None else ext.get_orm_base(namespace)
-    psqlgraph.create_all(pg_driver.engine, base=base)
+def create_tables(driver: models.DatabaseDriver) -> None:
+
+    # create default graph tables
+    psqlgraph.create_all(driver.g.engine, base=driver.orm_base)
+
+    # create extra base tables
+    for extra in driver.extra_bases:
+        extra.metadata.create_all(driver.g.engine)
 
 
-def drop_tables(bases, pg_driver):
-    """ Drops all tables in the listed orm_bases
+def drop_tables(driver: models.DatabaseDriver) -> None:
+    """Drops all tables in the listed orm_bases"""
+    psqlgraph.base.drop_all(driver.g.engine, driver.orm_base)
 
-    Args:
-        bases (list[sqlalchemy.Base):
-        pg_driver (psqlgraph.PsqlGraphDriver):
-    """
-    for base in bases:
-        base.metadata.drop_all(pg_driver.engine)
+    # drop all base tables
+    for base in driver.extra_bases:
+        base.metadata.drop_all(driver.g.engine)
 
 
 class Marks(object):
-
     def pgdata(self, name, driver, params):
-        """ Loads psqlgraph data from provided source
+        """Loads psqlgraph data from provided source
 
         Args:
             name (str): single string denoting the argument name to inject in to the test function
@@ -55,8 +61,32 @@ class Marks(object):
         """
 
 
+@attr.s(auto_attribs=True)
+class DatabaseFixture:
+    name: str
+    driver: models.DatabaseDriver
+    volatile: bool = False
+
+    def pre_test(self) -> psqlgraph.PsqlGraphDriver:
+        logger.info("Pre test setup for {}".format(self.name))
+        truncate_tables(self.driver.g)
+        return self.driver.g
+
+    def post_test(self) -> None:
+        logger.info("Post test clean up for {}".format(self.name))
+        truncate_tables(self.driver.g)
+
+    def pre_config(self) -> None:
+        logger.info("Setting up database for {}".format(self.name))
+        create_tables(self.driver)
+
+    def post_config(self) -> None:
+        logger.info("Destroying database for {}".format(self.name))
+        drop_tables(self.driver)
+
+
 @attr.s
-class FixtureHandler(object):
+class FixtureHandler:
 
     driver_name = attr.ib(type=str)
     volatile = attr.ib(default=False)
@@ -86,7 +116,9 @@ class PgDataHandler(FixtureHandler):
             models=self.kwargs.get("model"),
             defaults=self.kwargs.get("defaults"),
             dictionary=self.kwargs.get("dictionary"),
-            post_processors=self.kwargs.get("post_processors", {})  # type: dict[str, list]
+            post_processors=self.kwargs.get(
+                "post_processors", {}
+            ),  # type: dict[str, list]
         )
 
         source_data = self.kwargs.get("source")  # type: str|dict
@@ -152,6 +184,8 @@ def load_source(source):
     if file_ext == "json":
         with open(source, "r") as f:
             return json.load(f)
-    raise ValueError("Unsupported extension {}, file must end with one of {}".format(
-        ext, ["json", "yaml", "yml"]
-    ))
+    raise ValueError(
+        "Unsupported extension {}, file must end with one of {}".format(
+            ext, ["json", "yaml", "yml"]
+        )
+    )
