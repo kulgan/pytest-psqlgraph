@@ -1,5 +1,5 @@
 import logging
-from typing import Dict
+from typing import Dict, cast
 
 from _pytest import fixtures as f
 from _pytest import main as m
@@ -9,10 +9,11 @@ from . import helpers, models
 
 logger = logging.getLogger(__name__)
 CONFIG_FIXTURE_NAME: str = "psqlgraph_config"
+MARKER_NAME: str = "psqlgraph_data"
 ACTIVE_DB_FIXTURES: Dict[str, helpers.DatabaseFixture] = {}
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser: m.Parser) -> None:
     group = parser.getgroup("psqlgraph")
     group.addoption(
         "--drop-all", action="store_true", help="drop all tables before starting"
@@ -21,7 +22,8 @@ def pytest_addoption(parser):
 
 def pytest_configure(config: f.Config) -> None:
     config.addinivalue_line(
-        "markers", "use_psqlgraph_data(name, driver, params): loads data for testing "
+        "markers",
+        "{}(name, driver, params): loads data for testing ".format(MARKER_NAME),
     )
 
 
@@ -46,8 +48,8 @@ def pytest_collection_finish(session: m.Session) -> None:
     if not session.items:
         return
 
-    item = session.items[0]
-    request: f.SubRequest = item._request
+    item = cast(p.Function, session.items[0])
+    request: f.FixtureRequest = item._request
 
     cfg: Dict[str, models.DatabaseDriverConfig] = request.getfixturevalue(
         CONFIG_FIXTURE_NAME
@@ -70,13 +72,8 @@ def pytest_collection_finish(session: m.Session) -> None:
 def pytest_runtest_setup(item: p.Function) -> None:
     inject_psqlgraph_fixture(item)
 
-    # for marker in item.iter_markers(name="pgdata"):
-    #     kwargs = marker.kwargs
-    #     fixture_name = kwargs.get("name", "pgdata")
-    # handler = helpers.PgDataHandler(
-    #     driver_name=kwargs.get("driver"), kwargs=kwargs.get("params")
-    # )
-    # self.register_fixture(fixture_name, handler)
+    for marker in item.iter_markers(name=MARKER_NAME):
+        inject_marker_data(marker, item)
 
 
 def inject_psqlgraph_fixture(item: p.Function) -> None:
@@ -88,3 +85,19 @@ def inject_psqlgraph_fixture(item: p.Function) -> None:
         fixture = ACTIVE_DB_FIXTURES[pg_fixture]
         item.funcargs[pg_fixture] = fixture.pre_test()
         item.addfinalizer(fixture.post_test)
+
+
+def inject_marker_data(marker: f.Mark, item: p.Function) -> None:
+    mark: models.PsqlgraphDataMark = cast(models.PsqlgraphDataMark, marker.kwargs)
+    driver_name = mark["driver_name"]
+
+    if driver_name not in ACTIVE_DB_FIXTURES:
+        raise ValueError(
+            "provided psqlgraph driver {} is not defined in the fixture psqlgraph_config".format(
+                driver_name
+            )
+        )
+    fixture = ACTIVE_DB_FIXTURES[driver_name]
+    handler = helpers.MarkHandler(mark, fixture)
+    item.funcargs[mark["name"]] = handler.pre()
+    item.addfinalizer(handler.post)

@@ -18,7 +18,7 @@ def psqlgraph_config():
             "database": os.getenv("PG_NAME", "postgres"),
             "package_namespace": None,
             "dictionary": models.Dictionary(),
-            "models": models,
+            "model": models,
             "extra_bases": [VoidedBase],
         },
         "pgx_driver": {

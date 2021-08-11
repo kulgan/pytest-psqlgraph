@@ -1,6 +1,7 @@
 """ Helper functions """
 import json
 import logging
+from typing import Any, Dict, Iterable, List, Optional
 
 import attr
 import psqlgraph
@@ -42,8 +43,8 @@ def drop_tables(driver: models.DatabaseDriver) -> None:
         base.metadata.drop_all(driver.g.engine)
 
 
-class Marks(object):
-    def pgdata(self, name, driver, params):
+class Marks:
+    def pgdata(self, name: str, driver: str, params: Dict) -> None:
         """Loads psqlgraph data from provided source
 
         Args:
@@ -85,75 +86,31 @@ class DatabaseFixture:
         drop_tables(self.driver)
 
 
-@attr.s
-class FixtureHandler:
+@attr.s(auto_attribs=True)
+class DataFactory:
 
-    driver_name = attr.ib(type=str)
-    volatile = attr.ib(default=False)
-    _pg_driver = attr.ib(type=psqlgraph.PsqlGraphDriver, init=False, repr=False)
+    model: models.DataModel
+    pg_driver: psqlgraph.PsqlGraphDriver
+    dictionary: Optional[models.Dictionary]
+    post_processors: Iterable[models.PostProcessor]
+    globals: Optional[Dict[str, Any]]
 
-    def pre(self, pg_driver):
-        self._pg_driver = pg_driver
-        truncate_tables(self._pg_driver)
-        return pg_driver
+    factory: mocks.GraphFactory = None
+    mock_data: List[psqlgraph.Node] = attr.ib(factory=list)
 
-    def post(self):
-        truncate_tables(self._pg_driver)
-
-
-@attr.s
-class PgDataHandler(FixtureHandler):
-
-    kwargs = attr.ib(default={})
-    volatile = attr.ib(init=False, default=True)
-    mocks_factory = attr.ib(init=False)
-    nodes = attr.ib(type=list, init=False)
-
-    def pre(self, pg_driver):
-        self._pg_driver = pg_driver
-        self.mocks_factory = DataFactory(
-            pg_driver=pg_driver,
-            models=self.kwargs.get("model"),
-            defaults=self.kwargs.get("defaults"),
-            dictionary=self.kwargs.get("dictionary"),
-            post_processors=self.kwargs.get(
-                "post_processors", {}
-            ),  # type: dict[str, list]
-        )
-
-        source_data = self.kwargs.get("source")  # type: str|dict
-        unique_key = self.kwargs.get("unique_key")
-        mock_all_props = self.kwargs.get("mock_all_props", False)
-        if isinstance(source_data, str):
-            # assume file name
-            source_data = load_source(source_data)
-        self.mocks_factory.from_source(source_data, unique_key, mock_all_props)
-        return self.mocks_factory.mock_data
-
-    def post(self):
-        self.mocks_factory.clean()
-
-
-@attr.s
-class DataFactory(object):
-
-    models = attr.ib()
-    pg_driver = attr.ib()
-    dictionary = attr.ib()
-    post_processors = attr.ib(type=dict, default={})
-    defaults = attr.ib(default={})
-
-    factory = attr.ib(init=False)
-    mock_data = attr.ib(init=False)
-
-    def __attrs_post_init__(self):
+    def __attrs_post_init__(self) -> None:
         self.factory = mocks.GraphFactory(
-            models=self.models,
+            models=self.model,
             dictionary=self.dictionary,
-            graph_globals=self.defaults,
+            graph_globals=self.globals or {},
         )
 
-    def from_source(self, source_data, unique_key, mock_all_props=False):
+    def from_source(
+        self,
+        source_data: models.SchemaData,
+        unique_key: str,
+        mock_all_props: bool = False,
+    ) -> List[psqlgraph.Node]:
         self.mock_data = self.factory.create_from_nodes_and_edges(
             unique_key=unique_key,
             all_props=mock_all_props,
@@ -163,12 +120,12 @@ class DataFactory(object):
         # do post processing
         with self.pg_driver.session_scope() as s:
             for node in self.mock_data:
-                processors = self.post_processors.get(node.label, [])
-                for func in processors:
+                for func in self.post_processors:
                     func(node)
                 s.add(node)
+        return self.mock_data
 
-    def clean(self):
+    def clean(self) -> None:
         with self.pg_driver.session_scope() as sxn:
             for node in self.mock_data:
                 node = self.pg_driver.nodes().get(node.node_id)
@@ -176,16 +133,78 @@ class DataFactory(object):
                     sxn.delete(node)
 
 
-def load_source(source):
-    file_ext = source.split(".")[-1]
-    if file_ext in ["yaml", "yml"]:
-        with open(source, "r") as f:
-            return yaml.safe_load(f.read())
-    if file_ext == "json":
-        with open(source, "r") as f:
-            return json.load(f)
-    raise ValueError(
-        "Unsupported extension {}, file must end with one of {}".format(
-            ext, ["json", "yaml", "yml"]
+@attr.s(auto_attribs=True)
+class MarkHandler:
+
+    mark: models.PsqlgraphDataMark
+    fixture: DatabaseFixture
+
+    factory: DataFactory = attr.ib(default=None)
+
+    def __attrs_post_init__(self) -> None:
+        self.factory = DataFactory(
+            pg_driver=self.driver.g,
+            model=self.driver.model,
+            globals=self.driver.globals,
+            dictionary=self.driver.dictionary,
+            post_processors=self.mark.get("post_processors") or [],
         )
-    )
+
+    @property
+    def driver(self) -> models.DatabaseDriver:
+        return self.fixture.driver
+
+    def pre(self) -> List[psqlgraph.Node]:
+
+        unique_key = self.mark["unique_key"]
+        mock_all_props = self.mark.get("mock_all_props", False)
+
+        resource = self.mark["resource"]
+        if isinstance(resource, dict):
+            return self.factory.from_source(resource, unique_key, mock_all_props)
+
+        data_dir = self.mark["data_dir"]
+        source_data = load_data_files(data_dir, resource)
+
+        return self.factory.from_source(source_data, unique_key, mock_all_props)
+
+    def post(self) -> None:
+        self.factory.clean()
+
+
+def loads(file_name: str) -> models.SchemaData:
+    extension = file_name.split(".")[-1]
+    with open(file_name, "r") as r:
+        if extension == "json":
+            return json.loads(r.read())
+
+        if extension in ["yml", "yaml"]:
+            return yaml.safe_load(r)
+    return models.SchemaData()
+
+
+def load_data_files(resource_folder: str, resource_name: str) -> models.SchemaData:
+    file_name = f"{resource_folder}/{resource_name}"
+    rss: models.SchemaData = loads(file_name)
+
+    extended_resource = rss.pop("extends", None)
+    if not extended_resource:
+        return rss
+
+    extended = load_data_files(resource_folder, extended_resource)
+
+    # merge
+    rss["nodes"] += extended["nodes"]
+    rss["edges"] += extended["edges"]
+
+    if "summary" not in rss:
+        rss["summary"] = extended.get("summary", {})
+        return rss
+
+    for summary in extended.get("summary", {}):
+        if summary in rss["summary"]:
+            rss["summary"][summary] += extended["summary"][summary]
+        else:
+            rss["summary"][summary] = extended["summary"][summary]
+
+    return rss
