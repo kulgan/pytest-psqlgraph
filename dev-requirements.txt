@@ -26,8 +26,10 @@ coverage[toml]==5.5
     #   pytest-psqlgraph (setup.py)
 distlib==0.3.2
     # via virtualenv
-docutils==0.17.1
-    # via sphinx
+docutils==0.16
+    # via
+    #   sphinx
+    #   sphinx-rtd-theme
 filelock==3.0.12
     # via virtualenv
 flake8==3.9.2
@@ -114,6 +116,10 @@ six==1.15.0
 snowballstemmer==2.1.0
     # via sphinx
 sphinx==4.1.2
+    # via
+    #   pytest-psqlgraph (setup.py)
+    #   sphinx-rtd-theme
+sphinx-rtd-theme==0.5.2
     # via pytest-psqlgraph (setup.py)
 sphinxcontrib-applehelp==1.0.2
     # via sphinx
@@ -130,7 +136,9 @@ sphinxcontrib-qthelp==1.0.3
 sphinxcontrib-serializinghtml==1.1.5
     # via sphinx
 sqlalchemy==1.3.24
-    # via psqlgraph
+    # via
+    #   psqlgraph
+    #   pytest-psqlgraph (setup.py)
 toml==0.10.2
     # via
     #   coverage

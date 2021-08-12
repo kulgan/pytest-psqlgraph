@@ -1,6 +1,10 @@
+from typing import List
+
 import pkg_resources
 import psqlgraph
 import pytest
+
+from pytest_psqlgraph.models import SchemaData
 
 here = pkg_resources.resource_filename("tests", "data")
 
@@ -19,7 +23,9 @@ def append_mr(node: psqlgraph.Node) -> None:
     mock_all_props=True,
     post_processors=[append_mr],
 )
-def test_pgdata_with_yaml(pg_driver, pg_data):
+def test_pgdata_with_yaml(
+    pg_driver: psqlgraph.PsqlGraphDriver, pg_data: List[psqlgraph.Node]
+):
     """Tests use of pgdata to load initial from yaml/json"""
 
     assert len(pg_data) == 3
@@ -37,7 +43,9 @@ def test_pgdata_with_yaml(pg_driver, pg_data):
     mock_all_props=True,
     post_processors=[append_mr],
 )
-def test_pgdata_with_json(pg_driver, pg_data):
+def test_pgdata_with_json(
+    pg_driver: psqlgraph.PsqlGraphDriver, pg_data: List[psqlgraph.Node]
+) -> None:
     """Tests use of pgdata to load initial from yaml/json"""
 
     assert len(pg_data) == 3
@@ -46,7 +54,7 @@ def test_pgdata_with_json(pg_driver, pg_data):
         assert node.name == "Mr. Samson O."
 
 
-GRAPH = dict(
+GRAPH = SchemaData(
     nodes=[
         dict(label="mother", name="Dana O.", node_id="dana-1"),
         dict(label="son", name="Son O Dana", node_id="sn-1"),
@@ -62,7 +70,9 @@ GRAPH = dict(
     unique_key="node_id",
     mock_all_props=True,
 )
-def test_pgdata_with_object(pg_driver, pgdata):
+def test_pgdata_with_object(
+    pg_driver: psqlgraph.PsqlGraphDriver, pgdata: List[psqlgraph.Node]
+):
     assert len(pgdata) == 2
 
     with pg_driver.session_scope():

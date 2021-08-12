@@ -4,12 +4,20 @@ import attr
 import psqlgraph
 from psqlgraph import ext
 from sqlalchemy.ext.declarative import DeclarativeMeta
-from typing_extensions import Literal, Protocol, TypedDict
-
-UniqueFieldType = Literal["node_id", "submitter_id"]
+from typing_extensions import Protocol, TypedDict
 
 
 class Edge(TypedDict, total=False):
+    """A dictionary representation of edge data
+
+    Examples:
+        {
+            "label": "aligned_reads_files"
+            "src": "hw_0",
+            "dst": "ar_1",
+        }
+    """
+
     dst: str
     label: str
     src: str
@@ -17,8 +25,13 @@ class Edge(TypedDict, total=False):
 
 
 class Node(TypedDict, total=False):
-    node_id: str
-    submitter_id: str
+    """A slimmed down version of a Node data dictionary representation
+
+    In practice, complete node properties are dependent on the label
+    """
+
+    node_id: str  # unique identifier
+    submitter_id: str  # alternate unique identifier
     label: str
 
 

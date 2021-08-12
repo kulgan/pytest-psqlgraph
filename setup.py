@@ -59,6 +59,8 @@ setup(
             "pytest-cov",
             "sphinx",
             "mypy==0.910",
+            "sphinx",
+            "sphinx_rtd_theme",
             "sphinxcontrib-napoleon",
         ]
     },

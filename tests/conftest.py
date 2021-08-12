@@ -1,15 +1,17 @@
 import os
+from typing import Dict
 
 import pytest
 from psqlgraph.base import VoidedBase
 
+from pytest_psqlgraph.models import DatabaseDriverConfig
 from tests import models
 
 pytest_plugins = "pytester"
 
 
 @pytest.fixture(scope="session")
-def psqlgraph_config():
+def psqlgraph_config() -> Dict[str, DatabaseDriverConfig]:
     return {
         "pg_driver": {
             "host": os.getenv("PG_HOST", "localhost"),

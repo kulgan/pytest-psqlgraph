@@ -1,25 +1,27 @@
+================
 pytest-psqlgraph
 ================
 
-|PyPI version| |conda-forge version| |Python versions| |ci| |Documentation status|
+|ci|
 
 An extension for `pytest <https://pytest.org>`_ provide useful tools for testing applications that use `psqlgraph <https://github.com/NCI-GDC/psqlgraph>`_
 
-Quick Start
------------
+------------
+How to Start
+------------
 
 Install dependency ::
 
-    $ pip install pytest-psqlgraph
+    pip install https://github.com/kulgan/pytest-psqlgraph.git@master#egg=pytest-psqlgraph
 
-Setup ``pg_config`` fixture in main ``conftest.py``:
+Define a session scoped ``psqlgraph_config`` fixture in ``conftest.py``:
 
 .. code-block:: python
 
     import pytest
 
-    @pytest.fixture
-    def pg_config():
+    @pytest.fixture(scope="session")
+    def psqlgraph_config() -> Dict[str, DatabaseDriverConfig]:
         return {
             "pg_driver": {
                 "host": "localhost",
@@ -29,7 +31,7 @@ Setup ``pg_config`` fixture in main ``conftest.py``:
             }
         }
 
-This exposes a request scoped fixture that can be auto used:
+All set to start using the fixture ``pg_driver`` or whatever key was defined in the dictionary above
 
 .. code-block:: python
 
@@ -37,7 +39,10 @@ This exposes a request scoped fixture that can be auto used:
         with pg_driver.session_scoped() as s:
             s.add(Node(..))
 
-See docs for more
+Contributing
+------------
+Don't hesitate to create a `Github issue <https://github.com/kulgan/pytest-psqlgraph/issues>`__ for any bugs or suggestions or submit a PR.
+
 
 .. |PyPI version| image:: https://img.shields.io/pypi/v/pytest-psqlgraph.svg
    :target: https://pypi.python.org/pypi/pytest-psqlgraph
