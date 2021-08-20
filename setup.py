@@ -46,6 +46,7 @@ setup(
         "attrs",
         "pytest>=4.5",
         "PyYaml>=5",
+        "psqlgml @ git+ssh://git@github.com/NCI-GDC/psqlgml.git@0.1.0-rc.3",
         "psqlgraph @ git+https://github.com/NCI-GDC/psqlgraph.git@3.3.0#egg=psqlgraph",
         "sqlalchemy<1.4",
         "typing_extensions; python_version < '3.8'",

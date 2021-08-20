@@ -2,6 +2,7 @@ from typing import Any, Dict, Iterable, List, Optional, Union
 
 import attr
 import psqlgraph
+from psqlgml import models
 from psqlgraph import ext
 from sqlalchemy.ext.declarative import DeclarativeMeta
 from typing_extensions import Protocol, TypedDict
@@ -35,13 +36,13 @@ class Node(TypedDict, total=False):
     label: str
 
 
-class SchemaData(TypedDict, total=False):
-    description: str
-    edges: List[Edge]
-    extends: str
-    nodes: List[Node]
-    summary: Dict[str, int]
-    unique_field: str
+# class SchemaData(TypedDict, total=False):
+#     description: str
+#     edges: List[Edge]
+#     extends: str
+#     nodes: List[Node]
+#     summary: Dict[str, int]
+#     unique_field: str
 
 
 class PostProcessor(Protocol):
@@ -53,9 +54,9 @@ class PsqlgraphDataMark(TypedDict, total=False):
     name: str
     driver_name: str
     data_dir: str
-    resource: Union[str, SchemaData]
-    unique_key: str
-    mock_all_props: bool
+    resource: Union[str, models.SchemaData]
+    unique_key: str  # TODO: move to schema
+    mock_all_props: bool  # TODO: move to schema
     post_processors: Iterable[PostProcessor]
 
 

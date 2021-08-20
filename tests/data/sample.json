@@ -1,4 +1,5 @@
 {
+    "unique_field": "node_id",
     "nodes": [
         {
             "label": "father",

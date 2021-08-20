@@ -1,3 +1,4 @@
+unique_field: node_id
 nodes:
   - label: father
     node_id: father-1
