@@ -96,19 +96,51 @@ class DataFactory:
         unique_key: str,
         mock_all_props: bool = False,
     ) -> List[psqlgraph.Node]:
+        # do post processing
+        nodes_cache: Dict[str, m.Node] = {}
+        unique_key: m.UniqueFieldType = source_data.get("unique_field", unique_key)
+        for n in source_data["nodes"]:
+            nodes_cache[n[unique_key]] = n
         self.mock_data = self.factory.create_from_nodes_and_edges(
             unique_key=source_data.get("unique_field", unique_key),
             all_props=mock_all_props,
             nodes=source_data["nodes"],
             edges=source_data["edges"],
         )
-        # do post processing
         with self.pg_driver.session_scope() as s:
             for node in self.mock_data:
                 for func in self.post_processors:
                     func(node)
                 s.add(node)
+
+        # force sysan values
+        self.update_mocked_gdc_uuid(
+            unique_key,
+            nodes_cache,
+        )
         return self.mock_data
+
+    def update_mocked_gdc_uuid(
+        self,
+        unique_key: str,
+        node_data: Dict[str, m.Node],
+    ) -> None:
+        """Force gdc_uuid value
+        Args:
+            unique_key: unique key for node in node_data
+            node_data: test node data from json or yaml
+        Returns:
+        """
+        with self.pg_driver.session_scope() as session:
+            for n in self.mock_data:
+                node = self.pg_driver.nodes().get(n.node_id)
+                meta = node_data[node[unique_key]]
+                gdc_uuid = meta.get("gdc_uuid")
+                if not gdc_uuid:
+                    continue
+
+                node.gdc_uuid = gdc_uuid
+                session.merge(node)
 
     def clean(self) -> None:
         with self.pg_driver.session_scope() as sxn:
