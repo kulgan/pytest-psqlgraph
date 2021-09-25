@@ -1,48 +1,12 @@
 from typing import Any, Dict, Iterable, List, Optional, Union
 
 import attr
+import psqlgml
 import psqlgraph
-from psqlgml import models
 from psqlgraph import ext
 from sqlalchemy.ext.declarative import DeclarativeMeta
-from typing_extensions import Protocol, TypedDict
 
-
-class Edge(TypedDict, total=False):
-    """A dictionary representation of edge data
-
-    Examples:
-        {
-            "label": "aligned_reads_files"
-            "src": "hw_0",
-            "dst": "ar_1",
-        }
-    """
-
-    dst: str
-    label: str
-    src: str
-    tag: str
-
-
-class Node(TypedDict, total=False):
-    """A slimmed down version of a Node data dictionary representation
-
-    In practice, complete node properties are dependent on the label
-    """
-
-    node_id: str  # unique identifier
-    submitter_id: str  # alternate unique identifier
-    label: str
-
-
-# class SchemaData(TypedDict, total=False):
-#     description: str
-#     edges: List[Edge]
-#     extends: str
-#     nodes: List[Node]
-#     summary: Dict[str, int]
-#     unique_field: str
+from pytest_psqlgraph.typings import Protocol, TypedDict
 
 
 class PostProcessor(Protocol):
@@ -54,9 +18,7 @@ class PsqlgraphDataMark(TypedDict, total=False):
     name: str
     driver_name: str
     data_dir: str
-    resource: Union[str, models.SchemaData]
-    unique_key: str  # TODO: move to schema
-    mock_all_props: bool  # TODO: move to schema
+    resource: Union[str, psqlgml.GmlData]
     post_processors: Iterable[PostProcessor]
 
 

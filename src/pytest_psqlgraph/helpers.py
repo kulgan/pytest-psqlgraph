@@ -1,16 +1,13 @@
 """ Helper functions """
-import json
 import logging
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import attr
+import psqlgml
 import psqlgraph
-import yaml
-from psqlgml import dictionary as d
-from psqlgml import models as m
-from psqlgml import schema as s
-from psqlgml import validators as v
 from psqlgraph import mocks
+
+from pytest_psqlgraph.typings import Literal
 
 from . import models
 
@@ -18,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def truncate_tables(pg_driver: psqlgraph.PsqlGraphDriver) -> None:
-    """Truncates all entries in the datanase
+    """Truncates all entries in the database
 
     Args:
         pg_driver (psqlgraph.PsqlGraphDriver): active driver
@@ -92,17 +89,18 @@ class DataFactory:
 
     def from_source(
         self,
-        source_data: m.SchemaData,
-        unique_key: str,
-        mock_all_props: bool = False,
+        source_data: psqlgml.GmlData,
     ) -> List[psqlgraph.Node]:
         # do post processing
-        nodes_cache: Dict[str, m.Node] = {}
-        unique_key: m.UniqueFieldType = source_data.get("unique_field", unique_key)
+        nodes_cache: Dict[str, psqlgml.GmlNode] = {}
+        unique_key: Literal["node_id", "submitter_id"] = source_data.get(
+            "unique_field", "submitter_id"
+        )
+        mock_all_props = source_data.get("mock_all_props", True)
         for n in source_data["nodes"]:
             nodes_cache[n[unique_key]] = n
         self.mock_data = self.factory.create_from_nodes_and_edges(
-            unique_key=source_data.get("unique_field", unique_key),
+            unique_key=unique_key,
             all_props=mock_all_props,
             nodes=source_data["nodes"],
             edges=source_data["edges"],
@@ -112,35 +110,7 @@ class DataFactory:
                 for func in self.post_processors:
                     func(node)
                 s.add(node)
-
-        # force sysan values
-        self.update_mocked_gdc_uuid(
-            unique_key,
-            nodes_cache,
-        )
         return self.mock_data
-
-    def update_mocked_gdc_uuid(
-        self,
-        unique_key: str,
-        node_data: Dict[str, m.Node],
-    ) -> None:
-        """Force gdc_uuid value
-        Args:
-            unique_key: unique key for node in node_data
-            node_data: test node data from json or yaml
-        Returns:
-        """
-        with self.pg_driver.session_scope() as session:
-            for n in self.mock_data:
-                node = self.pg_driver.nodes().get(n.node_id)
-                meta = node_data[node[unique_key]]
-                gdc_uuid = meta.get("gdc_uuid")
-                if not gdc_uuid:
-                    continue
-
-                node.gdc_uuid = gdc_uuid
-                session.merge(node)
 
     def clean(self) -> None:
         with self.pg_driver.session_scope() as sxn:
@@ -173,91 +143,49 @@ class MarkHandler:
 
     def pre(self) -> List[psqlgraph.Node]:
 
-        unique_key = self.mark["unique_key"]
-        mock_all_props = self.mark.get("mock_all_props", False)
-
         resource = self.mark["resource"]
         if isinstance(resource, dict):
             if validate_resource(resource, self.driver.dictionary):
                 raise ValueError("Data Error")
-            return self.factory.from_source(resource, unique_key, mock_all_props)
+            return self.factory.from_source(resource)
 
         data_dir = self.mark["data_dir"]
-        source_data = load_data_files(data_dir, resource)
+        source_data = psqlgml.load_resource(data_dir, resource)
         # do validation
         if validate_file_resource(resource, data_dir, self.driver.dictionary):
             raise ValueError("Invalid data specified")
-        return self.factory.from_source(source_data, unique_key, mock_all_props)
+        return self.factory.from_source(source_data)
 
     def post(self) -> None:
         self.factory.clean()
 
 
-def read_schema(dictionary: models.Dictionary) -> Tuple[d.Dictionary, m.GmlSchema]:
-    schema = dictionary.schema
-    raw: Dict[str, d.Schema] = {}
-    for label, entry in schema.items():
-        raw[label] = d.Schema(raw=entry)
-    di = d.Dictionary(schema=raw, version="0.1", name="ineral", url="NA")
-    s.generate(di)
-    return di, s.read("ineral", version="0.1")
+def read_schema(
+    dictionary: models.Dictionary,
+) -> Tuple[psqlgml.Dictionary, psqlgml.GmlSchema]:
+    dictionary_name = f"{dictionary.__module__}.{dictionary.__class__.__name__}"
+    di = psqlgml.from_object(dictionary.schema, name=dictionary_name, version="0.1")
+    psqlgml.generate(di)
+    return di, psqlgml.read_schema(dictionary_name, version="0.1")
 
 
 def validate_file_resource(
     data_file: str, data_dir: str, dictionary: models.Dictionary
-) -> Set[v.DataViolation]:
+) -> Set[psqlgml.DataViolation]:
     di, schema = read_schema(dictionary)
-    req = v.ValidationRequest(
+    req = psqlgml.ValidationRequest(
         data_file=data_file, data_dir=data_dir, schema=schema, dictionary=di
     )
-    grouped_violations = v.validate(req, print_error=True)
-    violations: Set[v.DataViolation] = set.union(*grouped_violations.values())
+    grouped_violations = psqlgml.validate(req, print_error=True)
+    violations: Set[psqlgml.DataViolation] = set.union(*grouped_violations.values())
     return violations
 
 
 def validate_resource(
-    resource: m.SchemaData, dictionary: models.Dictionary
-) -> Set[v.DataViolation]:
+    resource: psqlgml.GmlData, dictionary: models.Dictionary
+) -> Set[psqlgml.DataViolation]:
     di, schema = read_schema(dictionary)
-    req = v.ValidationRequest("", "", schema, di, payload={"": resource})
-    grouped_violations = v.validate(req, print_error=True)
-    violations: Set[v.DataViolation] = set.union(*grouped_violations.values())
+    req = psqlgml.ValidationRequest("", "", schema, di, payload={"": resource})
+    grouped_violations = psqlgml.validate(req, print_error=True)
+    violations: Set[psqlgml.DataViolation] = set.union(*grouped_violations.values())
     return violations
-
-
-def loads(file_name: str) -> m.SchemaData:
-    extension = file_name.split(".")[-1]
-    with open(file_name, "r") as r:
-        if extension == "json":
-            return json.loads(r.read())
-
-        if extension in ["yml", "yaml"]:
-            return yaml.safe_load(r)
-    return m.SchemaData()
-
-
-def load_data_files(resource_folder: str, resource_name: str) -> m.SchemaData:
-    file_name = f"{resource_folder}/{resource_name}"
-    rss: m.SchemaData = loads(file_name)
-
-    extended_resource = rss.pop("extends", None)
-    if not extended_resource:
-        return rss
-
-    extended = load_data_files(resource_folder, extended_resource)
-
-    # merge
-    rss["nodes"] += extended["nodes"]
-    rss["edges"] += extended["edges"]
-
-    if "summary" not in rss:
-        rss["summary"] = extended.get("summary", {})
-        return rss
-
-    for summary in extended.get("summary", {}):
-        if summary in rss["summary"]:
-            rss["summary"][summary] += extended["summary"][summary]
-        else:
-            rss["summary"][summary] = extended["summary"][summary]
-
-    return rss
