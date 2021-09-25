@@ -79,5 +79,5 @@ class DatabaseDriver:
         return self.config.get("globals")
 
     @property
-    def dictionary(self) -> Optional[Dictionary]:
-        return self.config.get("dictionary")
+    def dictionary(self) -> Dictionary:
+        return self.config["dictionary"]

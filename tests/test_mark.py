@@ -1,9 +1,9 @@
 from typing import List
 
 import pkg_resources
+import psqlgml
 import psqlgraph
 import pytest
-from psqlgml import models
 
 here = pkg_resources.resource_filename("tests", "data")
 
@@ -53,7 +53,7 @@ def test_pgdata_with_json(
         assert node.name == "Mr. Samson O."
 
 
-GRAPH = models.SchemaData(
+GRAPH = dict(
     unique_field="node_id",
     nodes=[
         dict(label="mother", name="Dana O.", node_id="dana-1"),
