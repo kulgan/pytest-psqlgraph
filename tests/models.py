@@ -1,5 +1,3 @@
-from os import path
-
 import pkg_resources
 import yaml
 from psqlgraph import Edge, Node, pg_property

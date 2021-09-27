@@ -1,9 +1,8 @@
 import os
 from typing import Dict
 
-import psqlgraph.base
 import pytest
-from psqlgraph.base import VoidedBase
+from psqlgraph.base import ORMBase, VoidedBase
 
 from pytest_psqlgraph.models import DatabaseDriverConfig
 from tests import models
@@ -22,7 +21,7 @@ def psqlgraph_config() -> Dict[str, DatabaseDriverConfig]:
             package_namespace=None,
             dictionary=models.Dictionary(),
             model=models,
-            orm_base=psqlgraph.base.ORMBase,
+            orm_base=ORMBase,
             extra_bases=[VoidedBase],
         ),
         "pgx_driver": DatabaseDriverConfig(
