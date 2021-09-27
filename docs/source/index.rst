@@ -3,12 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to pytest-psqlgraph's documentation!
+pytest-psqlgraph's documentation!
 ============================================
-Pytest-Psqlgraph is a `pytest <https://pytest.org>`_ plugin that provides a set of useful tools for testing applications that utilize `psqlgraph <https://github.com/NCI-GDC/psqlgraph>`_.
-
-User's Guide
-------------
+pytest-psqlgraph is a `pytest <https://pytest.org>`_ plugin that provides a set of useful tools for testing applications that utilize `psqlgraph <https://github.com/NCI-GDC/psqlgraph>`_.
 
 .. toctree::
    :maxdepth: 4
@@ -16,16 +13,20 @@ User's Guide
 
    tutorials
    features
-   contributing
+   pytest_psqlgraph
 
 
 Quick Start
 -----------
-Install via ``pip``::
+
+Install via ``pip`` ::
+
    pip install pytest-psqlgraph
 
-Define a ``pg_config`` fixture in ``conftest.py``:
+Define a ``psqlgraph_config`` fixture in ``conftest.py``
+
 .. code-block:: python
+
    import pytest
 
    @pytest.fixture(scope="session")
@@ -40,10 +41,8 @@ Define a ``pg_config`` fixture in ``conftest.py``:
       )
 
 run test ::
+
    python -m pytest
-
-
-
 
 Indices and tables
 ==================

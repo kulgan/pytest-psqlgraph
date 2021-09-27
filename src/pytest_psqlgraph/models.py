@@ -1,34 +1,11 @@
 from typing import Any, Dict, Iterable, List, Optional, Union
 
 import attr
+import psqlgml
 import psqlgraph
-from psqlgraph import ext
 from sqlalchemy.ext.declarative import DeclarativeMeta
-from typing_extensions import Literal, Protocol, TypedDict
 
-UniqueFieldType = Literal["node_id", "submitter_id"]
-
-
-class Edge(TypedDict, total=False):
-    dst: str
-    label: str
-    src: str
-    tag: str
-
-
-class Node(TypedDict, total=False):
-    node_id: str
-    submitter_id: str
-    label: str
-
-
-class SchemaData(TypedDict, total=False):
-    description: str
-    edges: List[Edge]
-    extends: str
-    nodes: List[Node]
-    summary: Dict[str, int]
-    unique_field: str
+from pytest_psqlgraph.typings import Protocol, TypedDict
 
 
 class PostProcessor(Protocol):
@@ -40,9 +17,7 @@ class PsqlgraphDataMark(TypedDict, total=False):
     name: str
     driver_name: str
     data_dir: str
-    resource: Union[str, SchemaData]
-    unique_key: str
-    mock_all_props: bool
+    resource: Union[str, psqlgml.GmlData]
     post_processors: Iterable[PostProcessor]
 
 
@@ -62,6 +37,7 @@ class DatabaseDriverConfig(TypedDict):
     package_namespace: Optional[str]
     model: DataModel
     dictionary: Dictionary
+    orm_base: Optional[DeclarativeMeta]
     extra_bases: Optional[List[DeclarativeMeta]]
     globals: Optional[Dict[str, Any]]
 
@@ -77,8 +53,8 @@ class DatabaseDriver:
             user=self.config["user"],
             database=self.config["database"],
             password=self.config["password"],
-            package_namespace=self.config.get("package_namespace"),
         )
+        self.g.package_namespace = self.config.get("package_namespace")
 
     @property
     def package_namespace(self) -> Optional[str]:
@@ -92,7 +68,7 @@ class DatabaseDriver:
     def orm_base(self) -> DeclarativeMeta:
         if not self.package_namespace:
             return psqlgraph.base.ORMBase
-        return ext.get_orm_base(self.package_namespace)
+        return self.config.get("orm_base") or psqlgraph.base.ORMBase
 
     @property
     def model(self) -> Optional[DataModel]:
@@ -103,5 +79,11 @@ class DatabaseDriver:
         return self.config.get("globals")
 
     @property
-    def dictionary(self) -> Optional[Dictionary]:
-        return self.config.get("dictionary")
+    def dictionary(self) -> Dictionary:
+        return self.config["dictionary"]
+
+    def create_all(self) -> None:
+        self.orm_base.metadata.create_all(self.g.engine)
+
+    def drop_all(self) -> None:
+        self.orm_base.metadata.drop_all(self.g.engine)

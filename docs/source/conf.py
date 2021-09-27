@@ -14,8 +14,13 @@
 # import os
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
 
 from pkg_resources import get_distribution
+
+sys.path.insert(0, os.path.abspath("../../src"))
+
 
 # for example take major/minor
 
@@ -23,7 +28,7 @@ from pkg_resources import get_distribution
 # -- Project information -----------------------------------------------------
 
 project = u"pytest-psqlgraph"
-copyright = u"2020, Rowland Ogwara"
+copyright = u"2021, Rowland Ogwara"
 author = u"Rowland Ogwara"
 
 # The full version, including alpha/beta/rc tags
@@ -45,8 +50,9 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.viewcode",
     "sphinx.ext.githubpages",
-    "sphinxcontrib-napoleon",
+    "sphinx.ext.napoleon",
 ]
+napoleon_google_docstring = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -81,7 +87,15 @@ pygments_style = None
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = "alabaster"
+on_rtd = os.environ.get("READTHEDOCS", None) == "True"
+
+if not on_rtd:
+    import sphinx_rtd_theme
+
+    html_theme = "sphinx_rtd_theme"
+    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+else:
+    html_theme = "default"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -108,7 +122,7 @@ html_static_path = ["_static"]
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "pytest-psqlgraphdoc"
+htmlhelp_basename = "{}doc".format(project)
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -134,9 +148,9 @@ latex_elements = {
 latex_documents = [
     (
         master_doc,
-        "pytest-psqlgraph.tex",
-        u"pytest-psqlgraph Documentation",
-        u"Rowland Ogwara",
+        "{}.tex".format(project),
+        u"{} Documentation".format(project),
+        u"{}".format(author),
         "manual",
     ),
 ]
@@ -147,7 +161,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, "pytest-psqlgraph", u"pytest-psqlgraph Documentation", [author], 1)
+    (master_doc, "{}".format(project), "{} Documentation".format(project), [author], 1)
 ]
 
 
