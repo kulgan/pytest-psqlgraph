@@ -3,7 +3,6 @@ from typing import Any, Dict, Iterable, List, Optional, Union
 import attr
 import psqlgml
 import psqlgraph
-from psqlgraph import ext
 from sqlalchemy.ext.declarative import DeclarativeMeta
 
 from pytest_psqlgraph.typings import Protocol, TypedDict
@@ -38,6 +37,7 @@ class DatabaseDriverConfig(TypedDict):
     package_namespace: Optional[str]
     model: DataModel
     dictionary: Dictionary
+    orm_base: Optional[DeclarativeMeta]
     extra_bases: Optional[List[DeclarativeMeta]]
     globals: Optional[Dict[str, Any]]
 
@@ -53,8 +53,8 @@ class DatabaseDriver:
             user=self.config["user"],
             database=self.config["database"],
             password=self.config["password"],
-            package_namespace=self.config.get("package_namespace"),
         )
+        self.g.package_namespace = self.config.get("package_namespace")
 
     @property
     def package_namespace(self) -> Optional[str]:
@@ -68,7 +68,7 @@ class DatabaseDriver:
     def orm_base(self) -> DeclarativeMeta:
         if not self.package_namespace:
             return psqlgraph.base.ORMBase
-        return ext.get_orm_base(self.package_namespace)
+        return self.config.get("orm_base") or psqlgraph.base.ORMBase
 
     @property
     def model(self) -> Optional[DataModel]:
@@ -81,3 +81,9 @@ class DatabaseDriver:
     @property
     def dictionary(self) -> Dictionary:
         return self.config["dictionary"]
+
+    def create_all(self) -> None:
+        self.orm_base.metadata.create_all(self.g.engine)
+
+    def drop_all(self) -> None:
+        self.orm_base.metadata.drop_all(self.g.engine)

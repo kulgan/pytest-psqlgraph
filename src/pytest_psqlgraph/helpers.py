@@ -28,7 +28,7 @@ def truncate_tables(pg_driver: psqlgraph.PsqlGraphDriver) -> None:
 def create_tables(driver: models.DatabaseDriver) -> None:
 
     # create default graph tables
-    psqlgraph.create_all(driver.g.engine, base=driver.orm_base)
+    driver.create_all()
 
     # create extra base tables
     for extra in driver.extra_bases:
@@ -37,7 +37,7 @@ def create_tables(driver: models.DatabaseDriver) -> None:
 
 def drop_tables(driver: models.DatabaseDriver) -> None:
     """Drops all tables in the listed orm_bases"""
-    psqlgraph.base.drop_all(driver.g.engine, driver.orm_base)
+    driver.drop_all()
 
     # drop all base tables
     for base in driver.extra_bases:
