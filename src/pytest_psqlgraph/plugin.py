@@ -1,6 +1,7 @@
 import logging
 from typing import Dict, cast
 
+import pytest
 from _pytest import fixtures as f
 from _pytest import main as m
 from _pytest import python as p
@@ -15,9 +16,7 @@ ACTIVE_DB_FIXTURES: Dict[str, helpers.DatabaseFixture] = {}
 
 def pytest_addoption(parser: m.Parser) -> None:
     group = parser.getgroup("psqlgraph")
-    group.addoption(
-        "--drop-all", action="store_true", help="drop all tables before starting"
-    )
+    group.addoption("--drop-all", action="store_true", help="drop all tables before starting")
 
 
 def pytest_configure(config: f.Config) -> None:
@@ -51,9 +50,13 @@ def pytest_collection_finish(session: m.Session) -> None:
     item = cast(p.Function, session.items[0])
     request: f.FixtureRequest = item._request
 
-    cfg: Dict[str, models.DatabaseDriverConfig] = request.getfixturevalue(
-        CONFIG_FIXTURE_NAME
-    )
+    try:
+        cfg: Dict[str, models.DatabaseDriverConfig] = request.getfixturevalue(CONFIG_FIXTURE_NAME)
+    except pytest.FixtureLookupError:
+        logger.warning(
+            "pytest-psqlgraph config fixture not found, pytest-psqlgraph will not work correctly"
+        )
+        return
 
     for name, config in cfg.items():
 
