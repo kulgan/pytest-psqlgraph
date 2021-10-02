@@ -4,8 +4,7 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import attr
 import psqlgml
-import psqlgraph
-from psqlgraph import mocks
+from psqlgraph import Node, PsqlGraphDriver, mocks
 
 from pytest_psqlgraph.typings import Literal
 
@@ -14,15 +13,19 @@ from . import models
 logger = logging.getLogger(__name__)
 
 
-def truncate_tables(pg_driver: psqlgraph.PsqlGraphDriver) -> None:
+def truncate_tables(pg_driver: PsqlGraphDriver) -> None:
     """Truncates all entries in the database
 
     Args:
-        pg_driver (psqlgraph.PsqlGraphDriver): active driver
+        pg_driver: active driver
     """
     with pg_driver.engine.begin() as conn:
         for table in reversed(pg_driver.engine.table_names()):
-            conn.execute("delete from {} cascade".format(table))
+            try:
+                conn.execute("delete from {} cascade".format(table))
+                logger.debug(f"truncated {table}")
+            except Exception as e:
+                logger.warning(f"error while truncating {table} - {str(e)}", exc_info=True)
 
 
 def create_tables(driver: models.DatabaseDriver) -> None:
@@ -50,21 +53,21 @@ class DatabaseFixture:
     driver: models.DatabaseDriver
     volatile: bool = False
 
-    def pre_test(self) -> psqlgraph.PsqlGraphDriver:
-        logger.info("Pre test setup for {}".format(self.name))
+    def pre_test(self) -> PsqlGraphDriver:
+        logger.debug("Running pre test setup for {}".format(self.name))
         truncate_tables(self.driver.g)
         return self.driver.g
 
     def post_test(self) -> None:
-        logger.info("Post test clean up for {}".format(self.name))
+        logger.debug("Running post test clean up for {}".format(self.name))
         truncate_tables(self.driver.g)
 
     def pre_config(self) -> None:
-        logger.info("Setting up database for {}".format(self.name))
+        logger.debug("Setting up database for {}".format(self.name))
         create_tables(self.driver)
 
     def post_config(self) -> None:
-        logger.info("Destroying database for {}".format(self.name))
+        logger.debug("Destroying database for {}".format(self.name))
         drop_tables(self.driver)
 
 
@@ -72,13 +75,13 @@ class DatabaseFixture:
 class DataFactory:
 
     model: models.DataModel
-    pg_driver: psqlgraph.PsqlGraphDriver
+    pg_driver: PsqlGraphDriver
     dictionary: Optional[models.Dictionary]
     post_processors: Iterable[models.PostProcessor]
     globals: Optional[Dict[str, Any]]
 
     factory: mocks.GraphFactory = None
-    mock_data: List[psqlgraph.Node] = attr.ib(factory=list)
+    mock_data: List[Node] = attr.ib(factory=list)
 
     def __attrs_post_init__(self) -> None:
         self.factory = mocks.GraphFactory(
@@ -90,7 +93,7 @@ class DataFactory:
     def from_source(
         self,
         source_data: psqlgml.GmlData,
-    ) -> List[psqlgraph.Node]:
+    ) -> List[Node]:
         # do post processing
         nodes_cache: Dict[str, psqlgml.GmlNode] = {}
         unique_key: Literal["node_id", "submitter_id"] = source_data.get(
@@ -141,7 +144,7 @@ class MarkHandler:
     def driver(self) -> models.DatabaseDriver:
         return self.fixture.driver
 
-    def pre(self) -> List[psqlgraph.Node]:
+    def pre(self) -> List[Node]:
 
         resource = self.mark["resource"]
         if isinstance(resource, dict):

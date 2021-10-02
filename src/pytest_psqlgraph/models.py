@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Any, Dict, Iterable, Mapping, Optional, Tuple, Union
 
 import attr
 import psqlgml
@@ -9,6 +9,8 @@ from pytest_psqlgraph.typings import Protocol, TypedDict
 
 
 class PostProcessor(Protocol):
+    """A callable that allows users take action just after the nodes are generated"""
+
     def __call__(self, node: psqlgraph.Node) -> None:
         ...
 
@@ -22,7 +24,13 @@ class PsqlgraphDataMark(TypedDict, total=False):
 
 
 class Dictionary(Protocol):
-    schema: Dict[str, Any]
+    """A dictionary template
+
+    Attributes:
+        schema: node name and schema pairs
+    """
+
+    schema: Dict[str, psqlgml.DictionarySchemaDict]
 
 
 class DataModel(Protocol):
@@ -30,6 +38,22 @@ class DataModel(Protocol):
 
 
 class DatabaseDriverConfig(TypedDict):
+    """psqlgraph database configuration data
+
+    Attributes:
+        host: postgres database hostname with port (if non default)
+        user: postgres database username
+        password: postgres database user password
+        database: postgres database name to connect to
+        package_namespace: optional parameter used to demarcate driver model classes
+        model: The python module containing all the models associated with this database
+        dictionary: The instance containing the dictionary definitions
+        orm_base: Optional sqlalchemy declarative base used by all models, this defaults to
+            psqlgraph ORMBase
+        extra_bases: Iterable of bases that needs to be created/destroyed as part of the driver
+        globals: optional default property keys and values used for all nodes created
+    """
+
     host: str
     user: str
     password: str
@@ -38,7 +62,7 @@ class DatabaseDriverConfig(TypedDict):
     model: DataModel
     dictionary: Dictionary
     orm_base: Optional[DeclarativeMeta]
-    extra_bases: Optional[List[DeclarativeMeta]]
+    extra_bases: Optional[Iterable[DeclarativeMeta]]
     globals: Optional[Dict[str, Any]]
 
 
@@ -61,7 +85,7 @@ class DatabaseDriver:
         return self.config.get("package_namespace")
 
     @property
-    def extra_bases(self) -> List[DeclarativeMeta]:
+    def extra_bases(self) -> Iterable[DeclarativeMeta]:
         return self.config.get("extra_bases") or []
 
     @property
@@ -87,3 +111,9 @@ class DatabaseDriver:
 
     def drop_all(self) -> None:
         self.orm_base.metadata.drop_all(self.g.engine)
+
+
+class PytestMark(Protocol):
+    name: str
+    args: Tuple[Any, ...]
+    kwargs: Mapping[str, Any]

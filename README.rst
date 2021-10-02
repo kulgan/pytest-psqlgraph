@@ -12,7 +12,7 @@ How to Start
 
 Install dependency ::
 
-    pip install https://github.com/kulgan/pytest-psqlgraph.git@master#egg=pytest-psqlgraph
+    pip install pytest-psqlgraph
 
 Define a session scoped ``psqlgraph_config`` fixture in ``conftest.py``:
 

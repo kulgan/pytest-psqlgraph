@@ -15,9 +15,19 @@ title = "Pytest psqlgraph coverage report"
 directory = "docs/htmlcov"
 show_contexts = true
 
+[tool.black]
+line-length = 98
+include = '\.pyi?$'
+
 [tool.isort]
 profile = "black"
 known_first_party = ["pytest_psqlgraph"]
+
+[tool.towncrier]
+package = "justobjects"
+package_dir = "src"
+filename = "changelog.rst"
+directory = "changelog"
 
 [tool.mypy]
 pretty = true

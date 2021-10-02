@@ -1,6 +1,7 @@
 import logging
 from typing import Dict, cast
 
+import pytest
 from _pytest import fixtures as f
 from _pytest import main as m
 from _pytest import python as p
@@ -15,15 +16,15 @@ ACTIVE_DB_FIXTURES: Dict[str, helpers.DatabaseFixture] = {}
 
 def pytest_addoption(parser: m.Parser) -> None:
     group = parser.getgroup("psqlgraph")
-    group.addoption(
-        "--drop-all", action="store_true", help="drop all tables before starting"
-    )
+    group.addoption("--drop-all", action="store_true", help="drop all tables before starting")
 
 
 def pytest_configure(config: f.Config) -> None:
     config.addinivalue_line(
         "markers",
-        "{}(name, driver, params): loads data for testing ".format(MARKER_NAME),
+        "{}(host, user, password, database, model, dictionary): loads data for testing ".format(
+            MARKER_NAME
+        ),
     )
 
 
@@ -32,7 +33,9 @@ def pytest_collection_finish(session: m.Session) -> None:
 
     Initializes the database tables and makes fixtures available
     Example:
+
         code-block::
+
             {"g": {
                 "host": "localhost",
                 "user": "test",
@@ -51,22 +54,27 @@ def pytest_collection_finish(session: m.Session) -> None:
     item = cast(p.Function, session.items[0])
     request: f.FixtureRequest = item._request
 
-    cfg: Dict[str, models.DatabaseDriverConfig] = request.getfixturevalue(
-        CONFIG_FIXTURE_NAME
-    )
+    try:
+        cfg: Dict[str, models.DatabaseDriverConfig] = request.getfixturevalue(CONFIG_FIXTURE_NAME)
+        for name, config in cfg.items():
 
-    for name, config in cfg.items():
+            if name in ACTIVE_DB_FIXTURES:
+                continue
 
-        if name in ACTIVE_DB_FIXTURES:
-            continue
+            driver = models.DatabaseDriver(config)
+            logger.debug(f"initializing fixture {name}")
 
-        driver = models.DatabaseDriver(config)
-        logger.info("initializing fixture {0}".format(name))
+            fixture = helpers.DatabaseFixture(name, driver)
+            fixture.pre_config()
+            session.addfinalizer(fixture.post_config)
+            ACTIVE_DB_FIXTURES[name] = fixture
 
-        fixture = helpers.DatabaseFixture(name, driver)
-        fixture.pre_config()
-        session.addfinalizer(fixture.post_config)
-        ACTIVE_DB_FIXTURES[name] = fixture
+    except pytest.FixtureLookupError:
+        print("fixture not found")
+        logger.warning(
+            "pytest-psqlgraph config fixture not found, pytest-psqlgraph will not work correctly",
+            exc_info=True,
+        )
 
 
 def pytest_runtest_setup(item: p.Function) -> None:
@@ -77,7 +85,7 @@ def pytest_runtest_setup(item: p.Function) -> None:
 
 
 def inject_psqlgraph_fixture(item: p.Function) -> None:
-    """Resolves and setups psqldriver fixtures based on psqlgraph_config entries"""
+    """Resolves and setups psqlgraph driver fixtures based on psqlgraph_config entries"""
 
     for pg_fixture in ACTIVE_DB_FIXTURES:
         if pg_fixture not in item.fixturenames:
@@ -87,7 +95,7 @@ def inject_psqlgraph_fixture(item: p.Function) -> None:
         item.addfinalizer(fixture.post_test)
 
 
-def inject_marker_data(marker: f.Mark, item: p.Function) -> None:
+def inject_marker_data(marker: models.PytestMark, item: p.Function) -> None:
     mark: models.PsqlgraphDataMark = cast(models.PsqlgraphDataMark, marker.kwargs)
     driver_name = mark["driver_name"]
 
@@ -99,5 +107,9 @@ def inject_marker_data(marker: f.Mark, item: p.Function) -> None:
         )
     fixture = ACTIVE_DB_FIXTURES[driver_name]
     handler = helpers.MarkHandler(mark, fixture)
-    item.funcargs[mark["name"]] = handler.pre()
-    item.addfinalizer(handler.post)
+    try:
+        item.funcargs[mark["name"]] = handler.pre()
+        item.addfinalizer(handler.post)
+    except Exception as e:
+        logger.error(f"pytest-psqlgraph ran into an error while loading data: {e}", exc_info=True)
+        raise e

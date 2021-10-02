@@ -1,7 +1,6 @@
 from typing import List
 
 import pkg_resources
-import psqlgml
 import psqlgraph
 import pytest
 
@@ -10,7 +9,7 @@ here = pkg_resources.resource_filename("tests", "data")
 
 def append_mr(node: psqlgraph.Node) -> None:
     """Appends Mr. to father's name"""
-    node.name = "Mr. {}".format(node.name)
+    node.name = f"Mr. {node.name}"
 
 
 @pytest.mark.psqlgraph_data(
@@ -18,13 +17,9 @@ def append_mr(node: psqlgraph.Node) -> None:
     driver_name="pg_driver",
     data_dir=here,
     resource="sample.yaml",
-    unique_key="node_id",
-    mock_all_props=True,
     post_processors=[append_mr],
 )
-def test_pgdata_with_yaml(
-    pg_driver: psqlgraph.PsqlGraphDriver, pg_data: List[psqlgraph.Node]
-):
+def test_pgdata_with_yaml(pg_driver: psqlgraph.PsqlGraphDriver, pg_data: List[psqlgraph.Node]):
     """Tests use of pgdata to load initial from yaml/json"""
 
     assert len(pg_data) == 3
@@ -38,8 +33,6 @@ def test_pgdata_with_yaml(
     driver_name="pg_driver",
     data_dir=here,
     resource="sample.json",
-    unique_key="node_id",
-    mock_all_props=True,
     post_processors=[append_mr],
 )
 def test_pgdata_with_json(
@@ -67,12 +60,8 @@ GRAPH = dict(
     name="pgdata",
     driver_name="pg_driver",
     resource=GRAPH,
-    unique_key="node_id",
-    mock_all_props=True,
 )
-def test_pgdata_with_object(
-    pg_driver: psqlgraph.PsqlGraphDriver, pgdata: List[psqlgraph.Node]
-):
+def test_pgdata_with_object(pg_driver: psqlgraph.PsqlGraphDriver, pgdata: List[psqlgraph.Node]):
     assert len(pgdata) == 2
 
     with pg_driver.session_scope():
