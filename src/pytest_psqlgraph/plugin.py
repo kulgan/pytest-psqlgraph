@@ -56,26 +56,25 @@ def pytest_collection_finish(session: m.Session) -> None:
 
     try:
         cfg: Dict[str, models.DatabaseDriverConfig] = request.getfixturevalue(CONFIG_FIXTURE_NAME)
+        for name, config in cfg.items():
+
+            if name in ACTIVE_DB_FIXTURES:
+                continue
+
+            driver = models.DatabaseDriver(config)
+            logger.debug(f"initializing fixture {name}")
+
+            fixture = helpers.DatabaseFixture(name, driver)
+            fixture.pre_config()
+            session.addfinalizer(fixture.post_config)
+            ACTIVE_DB_FIXTURES[name] = fixture
+
     except pytest.FixtureLookupError:
         print("fixture not found")
         logger.warning(
             "pytest-psqlgraph config fixture not found, pytest-psqlgraph will not work correctly",
             exc_info=True,
         )
-        return
-
-    for name, config in cfg.items():
-
-        if name in ACTIVE_DB_FIXTURES:
-            continue
-
-        driver = models.DatabaseDriver(config)
-        logger.debug(f"initializing fixture {name}")
-
-        fixture = helpers.DatabaseFixture(name, driver)
-        fixture.pre_config()
-        session.addfinalizer(fixture.post_config)
-        ACTIVE_DB_FIXTURES[name] = fixture
 
 
 def pytest_runtest_setup(item: p.Function) -> None:
@@ -108,5 +107,9 @@ def inject_marker_data(marker: models.PytestMark, item: p.Function) -> None:
         )
     fixture = ACTIVE_DB_FIXTURES[driver_name]
     handler = helpers.MarkHandler(mark, fixture)
-    item.funcargs[mark["name"]] = handler.pre()
-    item.addfinalizer(handler.post)
+    try:
+        item.funcargs[mark["name"]] = handler.pre()
+        item.addfinalizer(handler.post)
+    except Exception as e:
+        logger.error(f"pytest-psqlgraph ran into an error while loading data: {e}", exc_info=True)
+        raise e
