@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, Mapping, Optional, Tuple, Union
 
 import attr
 import psqlgml
@@ -85,7 +85,7 @@ class DatabaseDriver:
         return self.config.get("package_namespace")
 
     @property
-    def extra_bases(self) -> List[DeclarativeMeta]:
+    def extra_bases(self) -> Iterable[DeclarativeMeta]:
         return self.config.get("extra_bases") or []
 
     @property
