@@ -1,5 +1,5 @@
-API Reference
-=============
+Reference
+=========
 
 Provides full reference to ``pytest-psqlgraph``
 

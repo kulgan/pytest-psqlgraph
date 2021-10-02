@@ -7,13 +7,6 @@ pytest-psqlgraph's documentation!
 ============================================
 pytest-psqlgraph is a `pytest <https://pytest.org>`_ plugin that provides a set of useful tools for testing applications that utilize `psqlgraph <https://github.com/NCI-GDC/psqlgraph>`_.
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Contents:
-
-   tutorials
-   features
-   pytest_psqlgraph
 
 
 Quick Start
@@ -71,6 +64,16 @@ This will autogenerate a ``pg_driver`` fixture on demand.
 run test ::
 
    python -m pytest
+
+User Guide
+----------
+
+.. toctree::
+   :maxdepth: 2
+
+   tutorials
+   features
+   pytest_psqlgraph
 
 Indices and tables
 ==================

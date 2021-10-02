@@ -22,7 +22,9 @@ def pytest_addoption(parser: m.Parser) -> None:
 def pytest_configure(config: f.Config) -> None:
     config.addinivalue_line(
         "markers",
-        "{}(name, driver, params): loads data for testing ".format(MARKER_NAME),
+        "{}(host, user, password, database, model, dictionary): loads data for testing ".format(
+            MARKER_NAME
+        ),
     )
 
 
@@ -31,7 +33,9 @@ def pytest_collection_finish(session: m.Session) -> None:
 
     Initializes the database tables and makes fixtures available
     Example:
+
         code-block::
+
             {"g": {
                 "host": "localhost",
                 "user": "test",
@@ -53,8 +57,10 @@ def pytest_collection_finish(session: m.Session) -> None:
     try:
         cfg: Dict[str, models.DatabaseDriverConfig] = request.getfixturevalue(CONFIG_FIXTURE_NAME)
     except pytest.FixtureLookupError:
+        print("fixture not found")
         logger.warning(
-            "pytest-psqlgraph config fixture not found, pytest-psqlgraph will not work correctly"
+            "pytest-psqlgraph config fixture not found, pytest-psqlgraph will not work correctly",
+            exc_info=True,
         )
         return
 
@@ -64,7 +70,7 @@ def pytest_collection_finish(session: m.Session) -> None:
             continue
 
         driver = models.DatabaseDriver(config)
-        logger.info("initializing fixture {0}".format(name))
+        logger.debug(f"initializing fixture {name}")
 
         fixture = helpers.DatabaseFixture(name, driver)
         fixture.pre_config()
@@ -80,7 +86,7 @@ def pytest_runtest_setup(item: p.Function) -> None:
 
 
 def inject_psqlgraph_fixture(item: p.Function) -> None:
-    """Resolves and setups psqldriver fixtures based on psqlgraph_config entries"""
+    """Resolves and setups psqlgraph driver fixtures based on psqlgraph_config entries"""
 
     for pg_fixture in ACTIVE_DB_FIXTURES:
         if pg_fixture not in item.fixturenames:
@@ -90,7 +96,7 @@ def inject_psqlgraph_fixture(item: p.Function) -> None:
         item.addfinalizer(fixture.post_test)
 
 
-def inject_marker_data(marker: f.Mark, item: p.Function) -> None:
+def inject_marker_data(marker: models.PytestMark, item: p.Function) -> None:
     mark: models.PsqlgraphDataMark = cast(models.PsqlgraphDataMark, marker.kwargs)
     driver_name = mark["driver_name"]
 
