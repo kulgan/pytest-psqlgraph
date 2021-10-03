@@ -2,7 +2,7 @@
 pytest-psqlgraph
 ================
 
-|ci|
+|Pypi version| |ci| |Documentation Status| |Python versions|
 
 An extension for `pytest <https://pytest.org>`_ provide useful tools for testing applications that use `psqlgraph <https://github.com/NCI-GDC/psqlgraph>`_
 
@@ -61,5 +61,5 @@ Don't hesitate to create a `Github issue <https://github.com/kulgan/pytest-psqlg
    :alt: PyPi downloads
 
 .. |Documentation status| image:: https://readthedocs.org/projects/pytest-psqlgraph/badge/?version=latest
-   :target: https://pytest-psqlgraph.readthedocs.org/en/latest/
-   :alt: Documentation status
+   :target: https://pytest-psqlgraph.readthedocs.io/en/latest/?badge=latest
+   :alt: Documentation Status
