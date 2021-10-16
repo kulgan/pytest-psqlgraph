@@ -155,7 +155,7 @@ def inject_driver_fixture(fixture: helpers.DatabaseFixture, request: f.SubReques
     old_fd = request._fixture_defs.get(fixture.name)  # noqa
     add_fixturename = fixture.name not in request.fixturenames
 
-    def fin():
+    def fin() -> None:
         request._fixturemanager._arg2fixturedefs[fixture.name].remove(fd)  # noqa
         request._fixture_defs[fixture.name] = old_fd  # noqa
 
