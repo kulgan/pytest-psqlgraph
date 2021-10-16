@@ -19,7 +19,9 @@ def append_mr(node: psqlgraph.Node) -> None:
     resource="sample.yaml",
     post_processors=[append_mr],
 )
-def test_pgdata_with_yaml(pg_driver: psqlgraph.PsqlGraphDriver, pg_data: List[psqlgraph.Node]):
+def test_pgdata_with_yaml(
+    pg_driver: psqlgraph.PsqlGraphDriver, pg_data: List[psqlgraph.Node]
+) -> None:
     """Tests use of pgdata to load initial from yaml/json"""
 
     assert len(pg_data) == 3
@@ -67,3 +69,25 @@ def test_pgdata_with_object(pg_driver: psqlgraph.PsqlGraphDriver, pgdata: List[p
     with pg_driver.session_scope():
         dana = pg_driver.nodes().get("dana-1")
         assert len(dana.sons) == 1
+
+
+@pytest.fixture()
+def data_fix(pg_driver: psqlgraph.PsqlGraphDriver) -> None:
+
+    with pg_driver.session_scope():
+        dana = pg_driver.nodes().get("dana-1")
+        dana.name = "Dana D. O."
+
+
+@pytest.mark.psqlgraph_data(
+    name="pgdata",
+    driver_name="pg_driver",
+    resource=GRAPH,
+)
+@pytest.mark.usefixtures("data_fix")
+def test_with_fixture(pg_driver: psqlgraph.PsqlGraphDriver, pgdata: List[psqlgraph.Node]) -> None:
+    assert len(pgdata) == 2
+    with pg_driver.session_scope():
+        dana = pg_driver.nodes().get("dana-1")
+
+        assert dana.name == "Dana D. O."
