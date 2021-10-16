@@ -4,6 +4,7 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import attr
 import psqlgml
+import psqlgraph
 from psqlgraph import Node, PsqlGraphDriver, mocks
 
 from pytest_psqlgraph.typings import Literal
@@ -108,7 +109,7 @@ class DataFactory:
             nodes=source_data["nodes"],
             edges=source_data["edges"],
         )
-        with self.pg_driver.session_scope() as s:
+        with self.pg_driver.session_scope(can_inherit=False) as s:
             for node in self.mock_data:
                 for func in self.post_processors:
                     func(node)

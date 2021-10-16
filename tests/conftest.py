@@ -2,7 +2,7 @@ import os
 from typing import Dict
 
 import pytest
-from psqlgraph.base import ORMBase, VoidedBase
+from psqlgraph.base import VoidedBase
 
 from pytest_psqlgraph.models import DatabaseDriverConfig
 from tests import models

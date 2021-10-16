@@ -23,12 +23,14 @@ Define a session scoped ``psqlgraph_config`` fixture in ``conftest.py``:
     @pytest.fixture(scope="session")
     def psqlgraph_config() -> Dict[str, DatabaseDriverConfig]:
         return {
-            "pg_driver": {
-                "host": "localhost",
-                "user": "username",
-                "password": "pword",
-                "database": "db_name"
-            }
+            "pg_driver": DatabaseDriverConfig(
+                host="localhost",
+                user="username",
+                password="pword",
+                database="db_name",
+                model=active_model,
+                dictionary=active_dictionary
+            )
         }
 
 All set to start using the fixture ``pg_driver`` or whatever key was defined in the dictionary above

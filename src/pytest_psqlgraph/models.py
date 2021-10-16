@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, Mapping, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, Optional, Union
 
 import attr
 import psqlgml
@@ -37,7 +37,8 @@ class DataModel(Protocol):
     ...
 
 
-class DatabaseDriverConfig(TypedDict):
+@attr.s(frozen=True, auto_attribs=True)
+class DatabaseDriverConfig:
     """psqlgraph database configuration data
 
     Attributes:
@@ -58,12 +59,12 @@ class DatabaseDriverConfig(TypedDict):
     user: str
     password: str
     database: str
-    package_namespace: Optional[str]
     model: DataModel
     dictionary: Dictionary
-    orm_base: Optional[DeclarativeMeta]
-    extra_bases: Optional[Iterable[DeclarativeMeta]]
-    globals: Optional[Dict[str, Any]]
+    package_namespace: Optional[str] = None
+    orm_base: Optional[DeclarativeMeta] = None
+    extra_bases: Optional[Iterable[DeclarativeMeta]] = None
+    globals: Optional[Dict[str, Any]] = None
 
 
 @attr.s(auto_attribs=True)
@@ -73,47 +74,41 @@ class DatabaseDriver:
 
     def __attrs_post_init__(self) -> None:
         self.g = psqlgraph.PsqlGraphDriver(
-            host=self.config["host"],
-            user=self.config["user"],
-            database=self.config["database"],
-            password=self.config["password"],
+            host=self.config.host,
+            user=self.config.user,
+            database=self.config.database,
+            password=self.config.password,
         )
-        self.g.package_namespace = self.config.get("package_namespace")
+        self.g.package_namespace = self.config.package_namespace
 
     @property
     def package_namespace(self) -> Optional[str]:
-        return self.config.get("package_namespace")
+        return self.config.package_namespace
 
     @property
     def extra_bases(self) -> Iterable[DeclarativeMeta]:
-        return self.config.get("extra_bases") or []
+        return self.config.extra_bases or []
 
     @property
     def orm_base(self) -> DeclarativeMeta:
         if not self.package_namespace:
             return psqlgraph.base.ORMBase
-        return self.config.get("orm_base") or psqlgraph.base.ORMBase
+        return self.config.orm_base or psqlgraph.base.ORMBase
 
     @property
     def model(self) -> Optional[DataModel]:
-        return self.config.get("model")
+        return self.config.model
 
     @property
     def globals(self) -> Optional[Dict[str, Any]]:
-        return self.config.get("globals")
+        return self.config.globals
 
     @property
     def dictionary(self) -> Dictionary:
-        return self.config["dictionary"]
+        return self.config.dictionary
 
     def create_all(self) -> None:
         self.orm_base.metadata.create_all(self.g.engine)
 
     def drop_all(self) -> None:
         self.orm_base.metadata.drop_all(self.g.engine)
-
-
-class PytestMark(Protocol):
-    name: str
-    args: Tuple[Any, ...]
-    kwargs: Mapping[str, Any]
