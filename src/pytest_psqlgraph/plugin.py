@@ -122,7 +122,8 @@ def inject_marker_data(mark: models.PsqlgraphDataMark, item: p.Function) -> None
     fixture = ACTIVE_DB_FIXTURES[driver_name]
     handler = helpers.MarkHandler(mark, fixture)
     try:
-        item.funcargs[mark["name"]] = handler.pre()
+        name = mark.get("name", "__psqlgraph_data__")
+        item.funcargs[name] = handler.pre()
         item.addfinalizer(handler.post)
     except Exception as e:
         logger.error(f"pytest-psqlgraph ran into an error while loading data: {e}", exc_info=True)
@@ -176,5 +177,5 @@ def inject_driver_fixture(fixture: helpers.DatabaseFixture, request: f.SubReques
 def __pg_driver_fixture__(request: f.SubRequest) -> None:
     """auto resolves named psqlgraph fixtures"""
 
-    for arg_name in request.fixturenames:
+    for arg_name in ACTIVE_DB_FIXTURES:
         __get_or_make_driver_fixture__(arg_name, request)

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Iterable, Optional, Union
+from typing import Any, Dict, Iterable, Optional, Type, Union
 
 import attr
 import psqlgml
@@ -8,19 +8,12 @@ from sqlalchemy.ext.declarative import DeclarativeMeta
 from pytest_psqlgraph.typings import Protocol, TypedDict
 
 
-class PostProcessor(Protocol):
-    """A callable that allows users take action just after the nodes are generated"""
-
-    def __call__(self, node: psqlgraph.Node) -> None:
-        ...
-
-
 class PsqlgraphDataMark(TypedDict, total=False):
-    name: str
+    name: Optional[str]
     driver_name: str
-    data_dir: str
+    data_dir: Optional[str]
     resource: Union[str, psqlgml.GmlData]
-    post_processors: Iterable[PostProcessor]
+    extension: Optional[Type["MarkExtension"]]
 
 
 class Dictionary(Protocol):
@@ -112,3 +105,34 @@ class DatabaseDriver:
 
     def drop_all(self) -> None:
         self.orm_base.metadata.drop_all(self.g.engine)
+
+
+class MarkExtension:
+    """An extension for psqlgraph data marker"""
+
+    def __init__(self, g: psqlgraph.PsqlGraphDriver) -> None:
+        self.g = g
+
+    def pre(self, nodes: Iterable[psqlgraph.Node]) -> None:
+        """Executes just before the generated nodes are written to the database
+
+        Args:
+            nodes: list of nodes pull from the test data that will be written to the database
+        """
+        ...
+
+    def run(self, node: psqlgraph.Node) -> None:
+        """Executes within the same transaction as the one that will write the current node
+
+        Args:
+            node: the current node just before it is added to the database
+        """
+        ...
+
+    def post(self, nodes: Iterable[psqlgraph.Node]) -> None:
+        """Same as pre, but executes after data has been persisted
+
+        Args:
+            nodes: all nodes generated and persisted
+        """
+        ...

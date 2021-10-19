@@ -4,7 +4,6 @@ from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 import attr
 import psqlgml
-import psqlgraph
 from psqlgraph import Node, PsqlGraphDriver, mocks
 
 from pytest_psqlgraph.typings import Literal
@@ -78,7 +77,7 @@ class DataFactory:
     model: models.DataModel
     pg_driver: PsqlGraphDriver
     dictionary: Optional[models.Dictionary]
-    post_processors: Iterable[models.PostProcessor]
+    extension: models.MarkExtension
     globals: Optional[Dict[str, Any]]
 
     factory: mocks.GraphFactory = None
@@ -109,11 +108,12 @@ class DataFactory:
             nodes=source_data["nodes"],
             edges=source_data["edges"],
         )
+        self.extension.pre(self.mock_data)
         with self.pg_driver.session_scope(can_inherit=False) as s:
             for node in self.mock_data:
-                for func in self.post_processors:
-                    func(node)
+                self.extension.run(node)
                 s.add(node)
+        self.extension.post(self.mock_data)
         return self.mock_data
 
     def clean(self) -> None:
@@ -133,12 +133,13 @@ class MarkHandler:
     factory: DataFactory = attr.ib(default=None)
 
     def __attrs_post_init__(self) -> None:
+        cls = self.mark.get("extension", models.MarkExtension)
         self.factory = DataFactory(
             pg_driver=self.driver.g,
             model=self.driver.model,
             globals=self.driver.globals,
             dictionary=self.driver.dictionary,
-            post_processors=self.mark.get("post_processors") or [],
+            extension=cls(g=self.driver.g),
         )
 
     @property
