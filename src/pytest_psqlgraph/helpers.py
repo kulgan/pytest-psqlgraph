@@ -133,7 +133,7 @@ class MarkHandler:
     factory: DataFactory = attr.ib(default=None)
 
     def __attrs_post_init__(self) -> None:
-        cls = self.mark.get("extension", models.MarkExtension)
+        cls = self.mark.get("extension") or models.MarkExtension
         self.factory = DataFactory(
             pg_driver=self.driver.g,
             model=self.driver.model,

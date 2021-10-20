@@ -9,11 +9,11 @@ from pytest_psqlgraph.typings import Protocol, TypedDict
 
 
 class PsqlgraphDataMark(TypedDict, total=False):
-    name: Optional[str]
+    name: str
     driver_name: str
-    data_dir: Optional[str]
+    data_dir: str
     resource: Union[str, psqlgml.GmlData]
-    extension: Optional[Type["MarkExtension"]]
+    extension: Type["MarkExtension"]
 
 
 class Dictionary(Protocol):
