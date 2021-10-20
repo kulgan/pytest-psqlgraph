@@ -8,7 +8,7 @@ local_scheme = "no-local-version"
 [tool.coverage.run]
 branch = true
 context = "unit tests"
-source = ["pytest_psqlgraph"]
+disable_warnings = ["module-not-measured"]
 
 [tool.coverage.html]
 title = "Pytest psqlgraph coverage report"

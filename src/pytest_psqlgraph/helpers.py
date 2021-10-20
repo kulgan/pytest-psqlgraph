@@ -169,9 +169,9 @@ def read_schema(
     dictionary: models.Dictionary,
 ) -> Tuple[psqlgml.Dictionary, psqlgml.GmlSchema]:
     dictionary_name = f"{dictionary.__module__}.{dictionary.__class__.__name__}"
-    di = psqlgml.from_object(dictionary.schema, name=dictionary_name, version="0.1")
+    di = psqlgml.from_object(dictionary.schema, name=dictionary_name, version="pytest_psqlgraph")
     psqlgml.generate(di)
-    return di, psqlgml.read_schema(dictionary_name, version="0.1")
+    return di, psqlgml.read_schema(dictionary_name, version="pytest_psqlgraph")
 
 
 def validate_file_resource(
@@ -190,7 +190,7 @@ def validate_resource(
     resource: psqlgml.GmlData, dictionary: models.Dictionary
 ) -> Set[psqlgml.DataViolation]:
     di, schema = read_schema(dictionary)
-    req = psqlgml.ValidationRequest("", "", schema, di, payload={"": resource})
+    req = psqlgml.ValidationRequest("data object", "", schema, di, payload={"": resource})
     grouped_violations = psqlgml.validate(req, print_error=True)
     violations: Set[psqlgml.DataViolation] = set.union(*grouped_violations.values())
     return violations

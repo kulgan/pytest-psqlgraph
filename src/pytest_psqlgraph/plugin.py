@@ -144,8 +144,8 @@ def pytest_runtest_setup(item: p.Function) -> None:
             or ""
         )
 
-        # if not data_dir.exists():
-        #     raise IOError(f"data file directory {data_dir} does not exist")
+        if not data_dir.exists():
+            raise IOError(f"data file directory {data_dir} does not exist")
 
         mark["data_dir"] = str(data_dir.absolute())
         inject_marker_data(mark, item)
