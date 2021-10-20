@@ -141,6 +141,7 @@ def pytest_runtest_setup(item: p.Function) -> None:
             mark.get("data_dir")
             or item.config.getoption("--data-dir")
             or item.config.getini("psqlgraph-data-dir")
+            or ""
         )
 
         if not data_dir.exists():
