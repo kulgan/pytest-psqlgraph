@@ -24,7 +24,7 @@ profile = "black"
 known_first_party = ["pytest_psqlgraph"]
 
 [tool.towncrier]
-package = "justobjects"
+package = "pytest_psqlgraph"
 package_dir = "src"
 filename = "changelog.rst"
 directory = "changelog"

@@ -16,7 +16,7 @@ ACTIVE_DB_FIXTURES: Dict[str, helpers.DatabaseFixture] = {}
 
 
 def pytest_addoption(parser: m.Parser) -> None:
-    group = parser.getgroup("psqlgraph")
+    group = parser.getgroup("pytest_psqlgraph")
     group.addoption("--data-dir", help="default test data files directory")
     parser.addini(
         "psqlgraph-data-dir", default="tests/data", help="default test data files directory"
