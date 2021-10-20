@@ -1,1 +1,1 @@
-CREATE DATABASE "dev_model" with OWNER "postgres";
+CREATE DATABASE "dev_models" with OWNER "postgres";
