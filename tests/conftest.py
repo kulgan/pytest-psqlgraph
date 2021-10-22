@@ -22,13 +22,5 @@ def psqlgraph_config() -> Dict[str, DatabaseDriverConfig]:
             dictionary=models.Dictionary(),
             model=models,
             extra_bases=[VoidedBase],
-        ),
-        "pgx_driver": DatabaseDriverConfig(
-            host=os.getenv("PG_HOST", "localhost"),
-            user=os.getenv("PG_USER", "test"),
-            password=os.getenv("PG_PASS", "test"),
-            database=os.getenv("DEV_PG_NAME", "dev_models"),
-            dictionary=models.Dictionary(),
-            model=models,
-        ),
+        )
     }

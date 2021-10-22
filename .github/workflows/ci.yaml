@@ -30,11 +30,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install tox
           tox -e lint
-      - name: create test database
-        run: |
-          apt-get update
-          apt-get install --yes --no-install-recommends postgresql-client
-          PGPASSWORD=test psql -c "CREATE database dev_models WITH OWNER 'postgres';" -U postgres
       - name: run tests
         run: |
           tox -e py

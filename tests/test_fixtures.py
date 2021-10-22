@@ -32,11 +32,10 @@ def nested_data_fixture(init_data, update_data) -> None:
 @pytest.mark.parametrize("key, expectation", [(1, 1), (2, 2)])
 def test_fixtures_injected(
     pg_driver: psqlgraph.PsqlGraphDriver,
-    pgx_driver: psqlgraph.PsqlGraphDriver,
     key: int,
     expectation: int,
 ) -> None:
-    assert pg_driver and pgx_driver
+    assert pg_driver
     assert key == expectation
 
 
