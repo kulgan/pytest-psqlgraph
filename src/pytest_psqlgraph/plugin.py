@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 from typing import Dict, cast
 
 import pytest
@@ -17,6 +18,9 @@ ACTIVE_DB_FIXTURES: Dict[str, helpers.DatabaseFixture] = {}
 def pytest_addoption(parser: m.Parser) -> None:
     group = parser.getgroup("psqlgraph")
     group.addoption("--data-dir", help="default test data files directory")
+    parser.addini(
+        "psqlgraph-data-dir", default="tests/data", help="default test data files directory"
+    )
 
 
 def pytest_configure(config: f.Config) -> None:
@@ -89,7 +93,6 @@ def __get_or_make_driver_fixture__(arg_name: str, request: f.SubRequest) -> None
     except f.FixtureLookupError:
         if arg_name not in ACTIVE_DB_FIXTURES:
             return
-        print(arg_name)
         fixture = ACTIVE_DB_FIXTURES[arg_name]
         inject_driver_fixture(fixture, request)
 
@@ -122,7 +125,8 @@ def inject_marker_data(mark: models.PsqlgraphDataMark, item: p.Function) -> None
     fixture = ACTIVE_DB_FIXTURES[driver_name]
     handler = helpers.MarkHandler(mark, fixture)
     try:
-        item.funcargs[mark["name"]] = handler.pre()
+        name = mark.get("name", "__psqlgraph_data__")
+        item.funcargs[name] = handler.pre()
         item.addfinalizer(handler.post)
     except Exception as e:
         logger.error(f"pytest-psqlgraph ran into an error while loading data: {e}", exc_info=True)
@@ -133,7 +137,17 @@ def pytest_runtest_setup(item: p.Function) -> None:
 
     for marker in item.iter_markers(name=MARKER_NAME):
         mark = cast(models.PsqlgraphDataMark, marker.kwargs)
-        mark["data_dir"] = mark.get("data_dir") or item.config.getoption("--data-dir")
+        data_dir = Path(
+            mark.get("data_dir")
+            or item.config.getoption("--data-dir")
+            or item.config.getini("psqlgraph-data-dir")
+            or ""
+        )
+
+        if not data_dir.exists():
+            raise IOError(f"data file directory {data_dir} does not exist")
+
+        mark["data_dir"] = str(data_dir.absolute())
         inject_marker_data(mark, item)
 
 
@@ -176,5 +190,5 @@ def inject_driver_fixture(fixture: helpers.DatabaseFixture, request: f.SubReques
 def __pg_driver_fixture__(request: f.SubRequest) -> None:
     """auto resolves named psqlgraph fixtures"""
 
-    for arg_name in request.fixturenames:
+    for arg_name in ACTIVE_DB_FIXTURES:
         __get_or_make_driver_fixture__(arg_name, request)

@@ -4,12 +4,14 @@ import pkg_resources
 import psqlgraph
 import pytest
 
+from pytest_psqlgraph.models import MarkExtension
+
 here = pkg_resources.resource_filename("tests", "data")
 
 
-def append_mr(node: psqlgraph.Node) -> None:
-    """Appends Mr. to father's name"""
-    node.name = f"Mr. {node.name}"
+class AppendExtension(MarkExtension):
+    def run(self, node: psqlgraph.Node) -> None:
+        node.name = f"Mr. {node.name}"
 
 
 @pytest.mark.psqlgraph_data(
@@ -17,7 +19,7 @@ def append_mr(node: psqlgraph.Node) -> None:
     driver_name="pg_driver",
     data_dir=here,
     resource="sample.yaml",
-    post_processors=[append_mr],
+    extension=AppendExtension,
 )
 def test_pgdata_with_yaml(
     pg_driver: psqlgraph.PsqlGraphDriver, pg_data: List[psqlgraph.Node]
@@ -35,7 +37,7 @@ def test_pgdata_with_yaml(
     driver_name="pg_driver",
     data_dir=here,
     resource="sample.json",
-    post_processors=[append_mr],
+    extension=AppendExtension,
 )
 def test_pgdata_with_json(
     pg_driver: psqlgraph.PsqlGraphDriver, pg_data: List[psqlgraph.Node]
@@ -87,6 +89,18 @@ def data_fix(pg_driver: psqlgraph.PsqlGraphDriver) -> None:
 @pytest.mark.usefixtures("data_fix")
 def test_with_fixture(pg_driver: psqlgraph.PsqlGraphDriver, pgdata: List[psqlgraph.Node]) -> None:
     assert len(pgdata) == 2
+    with pg_driver.session_scope():
+        dana = pg_driver.nodes().get("dana-1")
+
+        assert dana.name == "Dana D. O."
+
+
+@pytest.mark.psqlgraph_data(
+    driver_name="pg_driver",
+    resource=GRAPH,
+)
+@pytest.mark.usefixtures("data_fix")
+def test_with_fixture__no_inject(pg_driver: psqlgraph.PsqlGraphDriver) -> None:
     with pg_driver.session_scope():
         dana = pg_driver.nodes().get("dana-1")
 
